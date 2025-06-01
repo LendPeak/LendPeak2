@@ -13,7 +13,7 @@ import { demoLoanStorage } from '../../services/demoLoanStorage';
 const schema = yup.object({
   // Borrower Information
   borrowerId: yup.string().required('Borrower ID is required'),
-  coBorrowerIds: yup.array().of(yup.string()),
+  coBorrowerIds: yup.string().optional(), // Will be transformed to array in onSubmit
   
   // Loan Details
   loanType: yup.string().oneOf(['MORTGAGE', 'PERSONAL', 'AUTO', 'STUDENT', 'BUSINESS', 'OTHER']).required('Loan type is required'),
@@ -205,7 +205,14 @@ export const CreateLoanPage = () => {
 
   const onSubmit = (data: FormData) => {
     setError('');
-    createLoanMutation.mutate(data);
+    // Transform coBorrowerIds from string to array of strings
+    const processedData = {
+      ...data,
+      coBorrowerIds: data.coBorrowerIds
+        ? data.coBorrowerIds.split(',').map(id => id.trim()).filter(id => id !== '')
+        : [],
+    };
+    createLoanMutation.mutate(processedData as any); // Cast as any because schema expects string but API expects array
   };
 
   return (
@@ -248,9 +255,13 @@ export const CreateLoanPage = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="Optional"
+                  {...register('coBorrowerIds')}
+                  placeholder="Optional, e.g., user_002,user_003"
                   className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                 />
+                {errors.coBorrowerIds && (
+                  <p className="mt-1 text-sm text-red-600">{errors.coBorrowerIds.message}</p>
+                )}
               </div>
             </div>
           </div>

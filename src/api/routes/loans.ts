@@ -241,7 +241,15 @@ router.patch('/:id', validateRequest({ body: updateLoanSchema }), asyncHandler(a
   }
 
   // Update allowed fields
-  const allowedUpdates = ['metadata', 'tags', 'notes'];
+  // These fields are directly updatable via this PATCH endpoint.
+  // Other fields might require specific service methods or have business logic attached.
+  const allowedUpdates = [
+    'metadata',
+    'tags',
+    'notes',
+    'gracePeriodDays',
+    'lateFeeAmount' // Assuming 'lateFeAmount' in schema was a typo for 'lateFeeAmount'
+  ];
   const updates: any = {};
   
   allowedUpdates.forEach(field => {
