@@ -437,8 +437,26 @@ export class DocumentService {
     
     // TODO: Implement actual thumbnail generation
     // This would typically be done using AWS Lambda triggered by S3 events
+    // For now, we are only creating a key and not uploading a thumbnail.
+    logger.warn('Placeholder: Actual thumbnail generation not implemented. Only S3 key created.', {
+      originalKey,
+      thumbnailKeyToCreate: thumbnailKey,
+      mimeType,
+    });
+    // In a real implementation, you would:
+    // 1. Use a library like 'sharp' to resize the imageBuffer.
+    // 2. Upload the resized image to S3 with the thumbnailKey.
+    // Example (pseudo-code):
+    // const resizedImageBuffer = await sharp(imageBuffer).resize(200, 200).jpeg().toBuffer();
+    // await this.s3.putObject({
+    //   Bucket: this.bucketName,
+    //   Key: thumbnailKey,
+    //   Body: resizedImageBuffer,
+    //   ContentType: 'image/jpeg', // Or appropriate type
+    // }).promise();
+    // logger.info('Thumbnail generated and uploaded', { thumbnailKey });
     
-    return thumbnailKey;
+    return thumbnailKey; // Returning the key, but no actual thumbnail is uploaded yet.
   }
 
   private buildTagString(tags: Record<string, string>): string {
@@ -481,9 +499,20 @@ export class DocumentService {
     const url = `https://${this.cloudFrontDomain}/${s3Key}`;
     
     // TODO: Implement actual CloudFront URL signing
-    // This would use AWS.CloudFront.Signer
+    // This would use AWS.CloudFront.Signer with a private key and key pair ID.
+    logger.warn('Placeholder: Actual CloudFront URL signing not implemented. Returning unsigned URL.', {
+      s3Key,
+      unsignedUrl: url,
+    });
+    // In a real implementation, you would use something like:
+    // const signer = new AWS.CloudFront.Signer(config.aws.cloudFront.keyPairId, config.aws.cloudFront.privateKey);
+    // const signedUrl = signer.getSignedUrl({
+    //   url: `https://${this.cloudFrontDomain}/${s3Key}`,
+    //   expires: Math.floor((Date.now() / 1000) + (options.expiresIn || 3600)), // Unix timestamp
+    // });
+    // return signedUrl;
     
-    return url;
+    return url; // Returning unsigned URL.
   }
 
   /**

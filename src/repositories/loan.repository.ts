@@ -21,8 +21,10 @@ export class LoanRepository {
     // Generate loan number if not provided
     if (!loanData.loanNumber) {
       const year = new Date().getFullYear();
-      const sequence = Date.now().toString().slice(-6);
-      loanData.loanNumber = `LN-${year}-${sequence}`;
+      // New format: LN-YYYY-TimestampSuffixRandomChars
+      const timestampSuffix = Date.now().toString().slice(-8); // Last 8 digits of current timestamp
+      const randomChars = Math.random().toString(36).substring(2, 5).toUpperCase(); // 3 random alphanumeric chars
+      loanData.loanNumber = `LN-${year}-${timestampSuffix}${randomChars}`;
     }
 
     // Create the loan

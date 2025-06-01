@@ -15,8 +15,10 @@ import {
 } from '../validators/auth.validator';
 import { UserRole, UserStatus } from '../../models/user.model';
 import { logger } from '../../utils/logger';
+import { getEmailService } from '../../services/email.service';
 
 const router = Router();
+const emailService = getEmailService();
 const authService = new AuthService();
 
 /**
@@ -97,6 +99,27 @@ router.post('/register', validateRequest({ body: registerSchema }), asyncHandler
   await user.save();
 
   // TODO: Send verification email
+  // Send verification email
+  const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+  try {
+    await emailService.sendEmail({
+      to: user.email,
+      subject: 'Verify Your Email Address',
+      htmlBody: `
+        <h1>Welcome to Our Platform!</h1>
+        <p>Please click the link below to verify your email address:</p>
+        <a href="${verificationLink}">${verificationLink}</a>
+        <p>If you did not create an account, please ignore this email.</p>
+      `,
+      textBody: `Welcome! Please verify your email by visiting: ${verificationLink}`,
+    });
+    logger.info('Verification email sent', { userId: user.id, email });
+  } catch (error) {
+    logger.error('Failed to send verification email', { userId: user.id, email, error });
+    // Continue with registration even if email fails for now
+    // In a production app, you might want to handle this more gracefully (e.g., retry, or inform user)
+  }
+
   logger.info('User registered', { userId: user.id, email, verificationToken });
 
   res.status(201).json({
@@ -277,7 +300,26 @@ router.post('/forgot-password', authLimiter, validateRequest({ body: forgotPassw
 
   // TODO: Send password reset email
   if (resetToken) {
-    logger.info('Password reset requested', { email, resetToken });
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    try {
+      await emailService.sendEmail({
+        to: email,
+        subject: 'Password Reset Request',
+        htmlBody: `
+          <h1>Password Reset Request</h1>
+          <p>You requested a password reset. Click the link below to reset your password:</p>
+          <a href="${resetLink}">${resetLink}</a>
+          <p>If you did not request a password reset, please ignore this email.</p>
+          <p>This link will expire in 1 hour.</p>
+        `,
+        textBody: `Reset your password by visiting: ${resetLink}`,
+      });
+      logger.info('Password reset email sent', { email });
+    } catch (error) {
+      logger.error('Failed to send password reset email', { email, error });
+      // Do not expose email sending failure to the client to prevent email enumeration
+    }
+    logger.info('Password reset requested', { email, resetToken }); // Log token for testing/dev if needed
   }
 
   // Always return success to prevent email enumeration
