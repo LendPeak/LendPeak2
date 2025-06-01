@@ -144,7 +144,7 @@ export const StatementGenerator = ({ loan, isOpen, onClose, onSuccess }: Stateme
     const daysBetween = Math.floor((config.endDate.getTime() - config.startDate.getTime()) / (1000 * 60 * 60 * 24));
     
     // Add monthly payments
-    const transactionDate = new Date(config.startDate);
+    let transactionDate = new Date(config.startDate);
     let runningBalance = currentBalance + (payment.monthlyPayment.toNumber() * 2); // Starting balance
     
     while (transactionDate <= config.endDate) {
@@ -376,9 +376,92 @@ export const StatementGenerator = ({ loan, isOpen, onClose, onSuccess }: Stateme
   };
 
   const sendEmail = async (data: StatementData) => {
-    // In a real app, this would send via email service
-    console.log('Sending email statement:', data);
-    toast.info('Statement email sent to borrower');
+    try {
+      // Generate PDF buffer for email attachment
+      const pdfBuffer = await generatePDFBuffer(data);
+      
+      // Prepare email data
+      const emailData = {
+        borrowerEmail: loan.borrower?.email || loan.customerId + '@example.com', // Demo email
+        borrowerName: loan.borrower?.name || 'Demo Borrower',
+        loanId: loan.id,
+        statementPeriod: `${format(data.period.startDate, 'MMM dd, yyyy')} - ${format(data.period.endDate, 'MMM dd, yyyy')}`,
+        customMessage: config.customMessage,
+        statementData: {
+          period: data.period,
+          balances: data.balances,
+          transactions: data.transactions,
+          currentTerms: data.currentTerms,
+          yearToDate: data.yearToDate
+        }
+      };
+
+      // Call backend API to send email
+      const response = await fetch('/api/statements/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Email sending failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success(`Statement email sent successfully to ${emailData.borrowerEmail}`);
+      } else {
+        throw new Error(result.message || 'Email sending failed');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast.error('Failed to send statement email. Please try again.');
+    }
+  };
+
+  const generatePDFBuffer = async (data: StatementData): Promise<ArrayBuffer> => {
+    const doc = new jsPDF();
+    
+    // Use the same PDF generation logic as generatePDF function
+    const pageWidth = doc.internal.pageSize.width;
+    
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LOAN STATEMENT', pageWidth / 2, 30, { align: 'center' });
+    
+    // Add basic content (simplified for email)
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Loan ID: ${loan.id}`, 20, 50);
+    doc.text(`Statement Period: ${format(data.period.startDate, 'MM/dd/yyyy')} - ${format(data.period.endDate, 'MM/dd/yyyy')}`, 20, 60);
+    doc.text(`Borrower: ${loan.borrower?.name || 'N/A'}`, 20, 70);
+    
+    // Account Summary
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ACCOUNT SUMMARY', 20, 90);
+    
+    const summaryData = [
+      ['Beginning Balance', formatCurrency(data.balances.beginningBalance)],
+      ['Ending Balance', formatCurrency(data.balances.endingBalance)],
+      ['Total Paid (Period)', formatCurrency(data.balances.totalPaid)],
+    ];
+    
+    autoTable(doc, {
+      startY: 95,
+      head: [['Item', 'Amount']],
+      body: summaryData,
+      theme: 'striped',
+      styles: { fontSize: 10 },
+      columnStyles: { 1: { halign: 'right' } }
+    });
+    
+    // Return PDF as ArrayBuffer
+    return doc.output('arraybuffer');
   };
 
   const printStatement = async (data: StatementData) => {
