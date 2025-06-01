@@ -409,26 +409,40 @@ export class LoanEngine {
       lastPayment = payment;
     }
     
+    let payoffAmount: Big;
+
     if (!lastPayment) {
       // Payoff before first payment
-      return schedule.totalPrincipal;
-    }
-    
-    let payoffAmount = lastPayment.remainingBalance;
-    
-    if (includeAccruedInterest && lastPayment.remainingBalance.gt(0)) {
+      payoffAmount = schedule.totalPrincipal;
+      if (includeAccruedInterest && schedule.totalPrincipal.gt(0)) {
+        const accruedInterest = LoanEngine.calculateAccruedInterest(
+          schedule.totalPrincipal,
+          schedule.loanTerms.annualInterestRate,
+          schedule.loanTerms.startDate, // Interest accrues from loan start
+          date, // Payoff date
+          schedule.loanTerms.dayCountConvention,
+          schedule.loanTerms.roundingConfig
+        );
+        payoffAmount = payoffAmount.plus(accruedInterest);
+      }
+    } else {
+      // Payoff on or after the first payment
+      payoffAmount = lastPayment.remainingBalance;
+      if (includeAccruedInterest && lastPayment.remainingBalance.gt(0)) {
       // Calculate accrued interest from last payment to payoff date
-      // This is a simplified calculation - in practice you'd use the actual
-      // interest calculation based on the loan terms
-      const daysSinceLastPayment = date.diff(lastPayment.dueDate, 'day');
-      const dailyRate = schedule.effectiveInterestRate.div(36500); // Approximate daily rate
-      const accruedInterest = lastPayment.remainingBalance
-        .times(dailyRate)
-        .times(daysSinceLastPayment);
+      const accruedInterest = LoanEngine.calculateAccruedInterest(
+        lastPayment.remainingBalance,
+        schedule.loanTerms.annualInterestRate,
+        lastPayment.dueDate,
+        date,
+        schedule.loanTerms.dayCountConvention,
+        schedule.loanTerms.roundingConfig
+      );
       
       payoffAmount = payoffAmount.plus(accruedInterest);
+      }
     }
     
-    return round(payoffAmount, 2);
+    return round(payoffAmount, schedule.loanTerms.roundingConfig?.decimalPlaces || 2);
   }
 }
