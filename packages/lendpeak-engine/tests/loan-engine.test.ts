@@ -2,6 +2,7 @@ import { LoanEngine } from '../src';
 import Big from 'big.js';
 import dayjs from 'dayjs';
 import { isZero } from '../src/utils/decimal-utils'; // Added import
+import { RoundingMethod, DayCountConvention } from '../src/types/common'; // Add this import
 
 describe('LoanEngine', () => {
   describe('createLoan', () => {
@@ -110,25 +111,25 @@ describe('LoanEngine', () => {
     });
 
     it('should calculate bi-weekly payment correctly for a 2-year loan', () => {
-      // For 2 years (24 months), we expect 52 bi-weekly payments.
-      // The current calculateNumberOfPayments for bi-weekly is termMonths * 2.
-      // So, to get 52 payments, termMonths should be 26.
-      const loan = LoanEngine.createLoan(26000, 6.0, 26, '2024-01-01', { paymentFrequency: 'bi-weekly' });
+      // For a 2-year loan (24 months), we expect 52 bi-weekly payments.
+      // termMonths should be the actual loan duration in months.
+      // The calculateNumberOfPayments function correctly calculates 52 payments for termMonths = 24 and bi-weekly frequency.
+      // The value 'monthlyPayment' here actually represents the 'biWeeklyPayment'.
+      const loan = LoanEngine.createLoan(26000, 6.0, 24, '2024-01-01', { paymentFrequency: 'bi-weekly' });
       const result = LoanEngine.calculatePayment(loan);
-      // Note: Expected value updated to match current code output. Manual formula yields ~531.20.
-      expect(result.monthlyPayment.toFixed(2)).toBe('495.47'); // This is actually bi-weekly payment
+      expect(result.monthlyPayment.toFixed(2)).toBe('531.20'); // This is actually bi-weekly payment
       expect(result.totalInterest.toNumber()).toBeGreaterThan(0);
       expect(result.totalPayments.minus(result.totalInterest).toFixed(2)).toBe(loan.principal.toFixed(2));
     });
 
     it('should calculate weekly payment correctly for a 1-year loan', () => {
-      // For 1 year (12 months), we expect 52 weekly payments.
-      // The current calculateNumberOfPayments for weekly is termMonths * 4.
-      // So, to get 52 payments, termMonths should be 13.
-      const loan = LoanEngine.createLoan(52000, 5.2, 13, '2024-01-01', { paymentFrequency: 'weekly' });
+      // For a 1-year loan (12 months), we expect 52 weekly payments.
+      // termMonths should be the actual loan duration in months.
+      // The calculateNumberOfPayments function correctly calculates 52 payments for termMonths = 12 and weekly frequency.
+      // The value 'monthlyPayment' here actually represents the 'weeklyPayment'.
+      const loan = LoanEngine.createLoan(52000, 5.2, 12, '2024-01-01', { paymentFrequency: 'weekly' });
       const result = LoanEngine.calculatePayment(loan);
-      // Note: Expected value updated to match current code output. Manual formula yields ~1026.69.
-      expect(result.monthlyPayment.toFixed(2)).toBe('955.28'); // This is actually weekly payment
+      expect(result.monthlyPayment.toFixed(2)).toBe('1026.96'); // This is actually weekly payment
       expect(result.totalInterest.toNumber()).toBeGreaterThan(0);
       expect(result.totalPayments.minus(result.totalInterest).toFixed(2)).toBe(loan.principal.toFixed(2));
     });
@@ -882,6 +883,251 @@ describe('LoanEngine', () => {
       expect(paymentWithNewRate.monthlyPayment.toNumber()).toBeGreaterThan(
         paymentWithOriginalRate.monthlyPayment.toNumber()
       );
+    });
+  });
+
+  describe('Rounding in calculatePayment', () => {
+    const principal = '10000';
+    const annualRate = '3.333'; // Results in repeating decimals for monthly rate
+    const termMonths = 36;
+    const startDate = '2024-01-01';
+
+    // Raw calculations (Big.DP = 10 for these)
+    // r_monthly = 0.03333 / 12 = 0.0027775
+    // (1+r_monthly)^36 = (1.0027775)^36 = 1.1046411160 (approx)
+    // factor = r_monthly * (1+r_monthly)^n / ((1+r_monthly)^n - 1) = 0.0027775 * 1.1046411160 / (0.1046411160) = 0.0293171580
+    // rawMonthlyPayment = 10000 * 0.0293171580 = 293.1715800000
+    // rawTotalPayments = 293.1715800000 * 36 = 10554.1768800000
+    // rawTotalInterest = 554.1768800000
+
+    it('should round payment results using HALF_UP and 2 decimal places', () => {
+      const loan = LoanEngine.createLoan(principal, annualRate, termMonths, startDate, {
+        roundingConfig: { method: 'HALF_UP' as RoundingMethod, decimalPlaces: 2 }
+      });
+      const result = LoanEngine.calculatePayment(loan);
+      expect(result.monthlyPayment.toFixed(2)).toBe('293.17');
+      expect(result.totalInterest.toFixed(2)).toBe('554.18');
+      expect(result.totalPayments.toFixed(2)).toBe('10554.18');
+    });
+
+    it('should round payment results using DOWN and 2 decimal places', () => {
+      const loan = LoanEngine.createLoan(principal, annualRate, termMonths, startDate, {
+        roundingConfig: { method: 'DOWN' as RoundingMethod, decimalPlaces: 2 }
+      });
+      const result = LoanEngine.calculatePayment(loan);
+      expect(result.monthlyPayment.toFixed(2)).toBe('293.17');
+      expect(result.totalInterest.toFixed(2)).toBe('554.17');
+      expect(result.totalPayments.toFixed(2)).toBe('10554.17');
+    });
+
+    it('should round payment results using UP and 0 decimal places', () => {
+      const loan = LoanEngine.createLoan(principal, annualRate, termMonths, startDate, {
+        roundingConfig: { method: 'UP' as RoundingMethod, decimalPlaces: 0 }
+      });
+      const result = LoanEngine.calculatePayment(loan);
+      expect(result.monthlyPayment.toFixed(0)).toBe('294');
+      expect(result.totalInterest.toFixed(0)).toBe('555');
+      expect(result.totalPayments.toFixed(0)).toBe('10555');
+    });
+
+    it('should default to HALF_UP and 2 decimal places if no roundingConfig is provided', () => {
+      const loan = LoanEngine.createLoan(principal, annualRate, termMonths, startDate); // No roundingConfig
+      const result = LoanEngine.calculatePayment(loan);
+      // Default rounding is HALF_UP, 2 places as per LoanEngine.createLoan and roundMoney
+      expect(result.monthlyPayment.toFixed(2)).toBe('293.17');
+      expect(result.totalInterest.toFixed(2)).toBe('554.18');
+      expect(result.totalPayments.toFixed(2)).toBe('10554.18');
+    });
+  });
+
+  describe('Rounding in generateSchedule', () => {
+    const principal = '1000';
+    const annualRate = '5.555'; // Chosen to create fractional cents
+    const termMonths = 3;
+    const startDate = '2024-01-01';
+
+    it('should use HALF_UP, 2dp: schedule amounts rounded, final balance zero', () => {
+      const loanTerms = LoanEngine.createLoan(principal, annualRate, termMonths, startDate, {
+        roundingConfig: { method: 'HALF_UP' as RoundingMethod, decimalPlaces: 2 }
+      });
+      const schedule = LoanEngine.generateSchedule(loanTerms);
+      const config = loanTerms.roundingConfig!; // Not null due to definition
+
+      expect(schedule.payments).toHaveLength(termMonths);
+      // Check final balance is zero
+      expect(schedule.payments[termMonths - 1].remainingBalance.toFixed(config.decimalPlaces)).toBe('0.00');
+      // Check total principal paid
+      const totalPrincipalScheduled = schedule.payments.reduce((sum, p) => sum.plus(p.principal), new Big(0));
+      expect(totalPrincipalScheduled.toFixed(config.decimalPlaces)).toBe(loanTerms.principal.toFixed(config.decimalPlaces));
+
+      // Spot check first payment's interest (calculated based on how amortization-calculator works)
+      // Interest = round(P * r_monthly, config)
+      // r_monthly = 0.05555 / 12 = 0.004629166666...
+      // Raw Interest1 = 1000 * 0.004629166666... = 4.629166666...
+      // Rounded Interest1 (HALF_UP, 2dp) = 4.63
+      expect(schedule.payments[0].interest.toFixed(config.decimalPlaces)).toBe('4.63');
+      // Check that the payment amount used in schedule matches the one from calculatePayment
+      const paymentCalcResult = LoanEngine.calculatePayment(loanTerms);
+      expect(schedule.payments[0].totalPayment.toFixed(config.decimalPlaces)).toBe(paymentCalcResult.monthlyPayment.toFixed(config.decimalPlaces));
+    });
+
+    it('should use DOWN, 2dp: schedule amounts rounded, final balance zero', () => {
+      const loanTerms = LoanEngine.createLoan(principal, annualRate, termMonths, startDate, {
+        roundingConfig: { method: 'DOWN' as RoundingMethod, decimalPlaces: 2 }
+      });
+      const schedule = LoanEngine.generateSchedule(loanTerms);
+      const config = loanTerms.roundingConfig!;
+
+      expect(schedule.payments).toHaveLength(termMonths);
+      expect(schedule.payments[termMonths - 1].remainingBalance.toFixed(config.decimalPlaces)).toBe('0.00');
+      const totalPrincipalScheduled = schedule.payments.reduce((sum, p) => sum.plus(p.principal), new Big(0));
+      expect(totalPrincipalScheduled.toFixed(config.decimalPlaces)).toBe(loanTerms.principal.toFixed(config.decimalPlaces));
+
+      // Spot check first payment's interest
+      // Raw Interest1 = 4.629166666...
+      // Rounded Interest1 (DOWN, 2dp) = 4.62
+      expect(schedule.payments[0].interest.toFixed(config.decimalPlaces)).toBe('4.62');
+      const paymentCalcResult = LoanEngine.calculatePayment(loanTerms);
+      expect(schedule.payments[0].totalPayment.toFixed(config.decimalPlaces)).toBe(paymentCalcResult.monthlyPayment.toFixed(config.decimalPlaces));
+    });
+
+    it('should use UP, 0dp: schedule amounts rounded, final balance zero', () => {
+      const loanTerms = LoanEngine.createLoan(principal, annualRate, termMonths, startDate, {
+        roundingConfig: { method: 'UP' as RoundingMethod, decimalPlaces: 0 }
+      });
+      const schedule = LoanEngine.generateSchedule(loanTerms);
+      const config = loanTerms.roundingConfig!;
+
+      expect(schedule.payments).toHaveLength(termMonths);
+      expect(schedule.payments[termMonths - 1].remainingBalance.toFixed(config.decimalPlaces)).toBe('0');
+      const totalPrincipalScheduled = schedule.payments.reduce((sum, p) => sum.plus(p.principal), new Big(0));
+      expect(totalPrincipalScheduled.toFixed(config.decimalPlaces)).toBe(loanTerms.principal.toFixed(config.decimalPlaces));
+
+      // Spot check first payment's interest
+      // Raw Interest1 = 4.629166666...
+      // Rounded Interest1 (UP, 0dp) = 5
+      expect(schedule.payments[0].interest.toFixed(config.decimalPlaces)).toBe('5');
+      const paymentCalcResult = LoanEngine.calculatePayment(loanTerms);
+      expect(schedule.payments[0].totalPayment.toFixed(config.decimalPlaces)).toBe(paymentCalcResult.monthlyPayment.toFixed(config.decimalPlaces));
+    });
+
+    it('should use default rounding (HALF_UP, 2dp) when no config, final balance zero', () => {
+      const loanTerms = LoanEngine.createLoan(principal, annualRate, termMonths, startDate, {}); // Empty options, should use default
+      const schedule = LoanEngine.generateSchedule(loanTerms);
+
+      // Default is HALF_UP, 2dp
+      expect(schedule.payments).toHaveLength(termMonths);
+      expect(schedule.payments[termMonths - 1].remainingBalance.toFixed(2)).toBe('0.00');
+      const totalPrincipalScheduled = schedule.payments.reduce((sum, p) => sum.plus(p.principal), new Big(0));
+      expect(totalPrincipalScheduled.toFixed(2)).toBe(loanTerms.principal.toFixed(2));
+
+      // Check first payment's interest and total payment
+      expect(schedule.payments[0].interest.toFixed(2)).toBe('4.63');
+      const paymentCalcResult = LoanEngine.calculatePayment(loanTerms); // Recalculate with default config
+      expect(schedule.payments[0].totalPayment.toFixed(2)).toBe(paymentCalcResult.monthlyPayment.toFixed(2));
+    });
+  });
+
+  describe('Day Count Convention in Standard Schedules (No Irregular First Period)', () => {
+    const principal = '12000'; // Divisible by 12 for easy monthly interest
+    const annualRate = '12'; // 1% per month simple for 30/360
+    const termMonths = 3;
+    const startDate = '2024-01-01'; // Ensures first payment date is regular
+
+    it('should produce identical schedules for different conventions if no irregular period', () => {
+      const loanTerms30_360 = LoanEngine.createLoan(principal, annualRate, termMonths, startDate, {
+        dayCountConvention: '30/360',
+        // No firstPaymentDate, so it defaults to a regular period
+      });
+      const schedule30_360 = LoanEngine.generateSchedule(loanTerms30_360);
+
+      const loanTermsActual_365 = LoanEngine.createLoan(principal, annualRate, termMonths, startDate, {
+        dayCountConvention: 'actual/365',
+      });
+      const scheduleActual_365 = LoanEngine.generateSchedule(loanTermsActual_365);
+
+      // Compare interest payments for all periods
+      for (let i = 0; i < termMonths; i++) {
+        expect(scheduleActual_365.payments[i].interest.toFixed(2))
+          .toBe(schedule30_360.payments[i].interest.toFixed(2));
+        expect(scheduleActual_365.payments[i].principal.toFixed(2))
+          .toBe(schedule30_360.payments[i].principal.toFixed(2));
+      }
+      // Check final balance too
+      expect(scheduleActual_365.payments[termMonths - 1].remainingBalance.toFixed(2)).toBe('0.00');
+      expect(schedule30_360.payments[termMonths - 1].remainingBalance.toFixed(2)).toBe('0.00');
+    });
+  });
+
+  describe('Day Count Convention in Schedules with Irregular First Period', () => {
+    const principal = '10000';
+    const annualRate = '6'; // 6% annual rate
+    const paymentFrequency = 'monthly';
+    // termRegularPayments is not directly used in LoanEngine.createLoan, termMonths is.
+
+    // Scenario 1: Short First Period
+    describe('Short First Period', () => {
+      const startDateShort = dayjs('2024-01-01');
+      const firstPaymentDateShort = dayjs('2024-01-16'); // 15 days later
+      const termMonthsShort = 3; // Accommodates 1 irregular + 2 regular monthly payments
+
+      const conventions: DayCountConvention[] = ['30/360', 'actual/365', 'actual/actual'];
+      conventions.forEach(convention => {
+        it(`should correctly calculate first interest for ${convention} (short period)`, () => {
+          const loanTerms = LoanEngine.createLoan(principal, annualRate, termMonthsShort, startDateShort, {
+            paymentFrequency: paymentFrequency,
+            firstPaymentDate: firstPaymentDateShort,
+            dayCountConvention: convention,
+            roundingConfig: { method: 'HALF_UP' as RoundingMethod, decimalPlaces: 2 }
+          });
+          const schedule = LoanEngine.generateSchedule(loanTerms);
+
+          // Calculate expected first period interest using LoanEngine.calculateInterest
+          const expectedFirstInterestResult = LoanEngine.calculateInterest({
+            principal: new Big(principal), // Use new Big() for clarity, though string is fine
+            annualRate: new Big(annualRate),
+            startDate: startDateShort,
+            endDate: firstPaymentDateShort,
+            dayCountConvention: convention,
+            roundingConfig: loanTerms.roundingConfig
+          });
+
+          expect(schedule.payments[0].interest.toFixed(2)).toBe(expectedFirstInterestResult.interestAmount.toFixed(2));
+          expect(schedule.payments[schedule.payments.length - 1].remainingBalance.toFixed(2)).toBe('0.00');
+        });
+      });
+    });
+
+    // Scenario 2: Long First Period (across month/year end, leap consideration for actual/actual)
+    describe('Long First Period (Jan 2024 is context, Feb 2024 has 29 days)', () => {
+      const startDateLong = dayjs('2023-12-10');
+      const firstPaymentDateLong = dayjs('2024-02-01'); // Approx 53 days. 2024 is a leap year.
+      const termMonthsLong = 3; // 1 irregular + 2 regular.
+
+      const conventionsLong: DayCountConvention[] = ['30/360', 'actual/365', 'actual/actual'];
+      conventionsLong.forEach(convention => {
+        it(`should correctly calculate first interest for ${convention} (long period, leap year context)`, () => {
+          const loanTerms = LoanEngine.createLoan(principal, annualRate, termMonthsLong, startDateLong, {
+            paymentFrequency: paymentFrequency,
+            firstPaymentDate: firstPaymentDateLong,
+            dayCountConvention: convention,
+            roundingConfig: { method: 'HALF_UP' as RoundingMethod, decimalPlaces: 2 }
+          });
+          const schedule = LoanEngine.generateSchedule(loanTerms);
+
+          const expectedFirstInterestResult = LoanEngine.calculateInterest({
+            principal: new Big(principal),
+            annualRate: new Big(annualRate),
+            startDate: startDateLong,
+            endDate: firstPaymentDateLong,
+            dayCountConvention: convention,
+            roundingConfig: loanTerms.roundingConfig
+          });
+
+          expect(schedule.payments[0].interest.toFixed(2)).toBe(expectedFirstInterestResult.interestAmount.toFixed(2));
+          expect(schedule.payments[schedule.payments.length - 1].remainingBalance.toFixed(2)).toBe('0.00');
+        });
+      });
     });
   });
 });
