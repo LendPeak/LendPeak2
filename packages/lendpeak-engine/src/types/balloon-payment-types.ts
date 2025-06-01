@@ -79,11 +79,13 @@ export interface LoanBalloonConfig {
 /**
  * Result of balloon payment detection
  */
+import { Dayjs } from 'dayjs'; // Import Dayjs
+
 export interface BalloonDetectionResult {
   detected: boolean;
   payment?: {
     paymentNumber: number;
-    dueDate: Date;
+    dueDate: Dayjs; // Changed from Date
     amount: Big;
     regularPaymentAmount: Big;
   };
@@ -102,12 +104,12 @@ export interface BalloonDetectionResult {
  * Balloon payment notification schedule
  */
 export interface BalloonNotification {
-  scheduledDate: Date;
+  scheduledDate: Dayjs; // Changed from Date
   daysBefore: number;
   channel: 'EMAIL' | 'MAIL' | 'SMS' | 'PORTAL' | 'ALL';
   template: string;
   sent: boolean;
-  sentDate?: Date;
+  sentDate?: Dayjs; // Changed from Date
   deliveryStatus?: 'DELIVERED' | 'FAILED' | 'PENDING';
 }
 

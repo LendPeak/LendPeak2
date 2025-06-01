@@ -1,9 +1,9 @@
 // Demo data for browser-only mode
 import type { LoanParameters } from '@lendpeak/engine';
-import { DEMO_WATERFALL_TEMPLATES } from '../../../src/demo/demoLoanLibrary';
+// import { DEMO_WATERFALL_TEMPLATES } from '../../../src/demo/demoLoanLibrary'; // Commented out due to missing file
 
 // Use waterfall templates from the comprehensive demo library
-const WATERFALL_TEMPLATES = DEMO_WATERFALL_TEMPLATES;
+// const WATERFALL_TEMPLATES = DEMO_WATERFALL_TEMPLATES; // Commented out
 
 export interface DemoCustomer {
   id: string;
@@ -127,7 +127,7 @@ export const DEMO_LOANS: DemoLoan[] = [
       calendarType: 'ACTUAL/365',
       accrualTiming: 'DAY_1',
       perDiemMethod: 'STABLE',
-      paymentWaterfall: WATERFALL_TEMPLATES[0],
+      // paymentWaterfall: WATERFALL_TEMPLATES[0], // Commented out
       fees: {
         originationFee: 1.5,
         processingFee: 299,
@@ -152,7 +152,7 @@ export const DEMO_LOANS: DemoLoan[] = [
       calendarType: 'ACTUAL/365',
       accrualTiming: 'DAY_1',
       perDiemMethod: 'STABLE',
-      paymentWaterfall: WATERFALL_TEMPLATES[0],
+      // paymentWaterfall: WATERFALL_TEMPLATES[0], // Commented out
       fees: {
         originationFee: 2.0,
         processingFee: 199,
@@ -177,7 +177,7 @@ export const DEMO_LOANS: DemoLoan[] = [
       calendarType: '30/360',
       accrualTiming: 'DAY_1',
       perDiemMethod: 'STABLE',
-      paymentWaterfall: WATERFALL_TEMPLATES[0],
+      // paymentWaterfall: WATERFALL_TEMPLATES[0], // Commented out
       fees: {
         originationFee: 0.5,
         processingFee: 1500,
@@ -202,7 +202,7 @@ export const DEMO_LOANS: DemoLoan[] = [
       calendarType: 'ACTUAL/365',
       accrualTiming: 'DAY_1',
       perDiemMethod: 'STABLE',
-      paymentWaterfall: WATERFALL_TEMPLATES[0],
+      // paymentWaterfall: WATERFALL_TEMPLATES[0], // Commented out
       fees: {
         originationFee: 1.0,
         processingFee: 99,
@@ -228,7 +228,7 @@ export const DEMO_LOANS: DemoLoan[] = [
       calendarType: 'ACTUAL/365',
       accrualTiming: 'DAY_0',
       perDiemMethod: 'VARIABLE',
-      paymentWaterfall: WATERFALL_TEMPLATES[1],
+      // paymentWaterfall: WATERFALL_TEMPLATES[1], // Commented out
     },
     status: 'PENDING',
     applicationDate: new Date('2024-03-25'),
@@ -247,7 +247,7 @@ export const DEMO_LOANS: DemoLoan[] = [
       calendarType: 'ACTUAL/365',
       accrualTiming: 'DAY_1',
       perDiemMethod: 'STABLE',
-      paymentWaterfall: WATERFALL_TEMPLATES[0],
+      // paymentWaterfall: WATERFALL_TEMPLATES[0], // Commented out
       fees: {
         originationFee: 1.25,
         processingFee: 499,

@@ -160,13 +160,17 @@ export function generateAmortizationSchedule(
     cumulativePrincipal = cumulativePrincipal.plus(principalPayment);
     
     // Create payment record - values already rounded
+    const currentBeginningBalance = remainingBalance.plus(principalPayment); // Balance before this payment's principal was deducted
+
     payments.push({
       paymentNumber: i,
       dueDate: currentDate,
       principal: principalPayment,
       interest: interestPayment,
       totalPayment: totalPayment,
-      remainingBalance: remainingBalance,
+      beginningBalance: currentBeginningBalance, // Added
+      endingBalance: remainingBalance, // Added (this is remainingBalance after principal deduction)
+      remainingBalance: remainingBalance, // This is effectively the same as endingBalance
       cumulativeInterest: cumulativeInterest,
       cumulativePrincipal: cumulativePrincipal,
     });
@@ -180,12 +184,16 @@ export function generateAmortizationSchedule(
   if (terms.balloonPayment && terms.balloonPayment.gt(0) && remainingBalance.gt(0)) {
     const balloonDate = terms.balloonPaymentDate || currentDate;
     const balloonPrincipal = roundMoney(remainingBalance, terms.roundingConfig);
+    const finalBeginningBalance = remainingBalance.plus(balloonPrincipal); // Balance before this final balloon payment
+
     payments.push({
       paymentNumber: payments.length + 1,
       dueDate: balloonDate,
       principal: balloonPrincipal,
       interest: toBig(0),
       totalPayment: balloonPrincipal,
+      beginningBalance: finalBeginningBalance, // Added
+      endingBalance: toBig(0), // Added (loan ends)
       remainingBalance: toBig(0),
       cumulativeInterest: cumulativeInterest,
       cumulativePrincipal: cumulativePrincipal.plus(balloonPrincipal),

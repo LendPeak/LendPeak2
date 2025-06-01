@@ -144,7 +144,7 @@ export const StatementGenerator = ({ loan, isOpen, onClose, onSuccess }: Stateme
     const daysBetween = Math.floor((config.endDate.getTime() - config.startDate.getTime()) / (1000 * 60 * 60 * 24));
     
     // Add monthly payments
-    let transactionDate = new Date(config.startDate);
+    const transactionDate = new Date(config.startDate);
     let runningBalance = currentBalance + (payment.monthlyPayment.toNumber() * 2); // Starting balance
     
     while (transactionDate <= config.endDate) {

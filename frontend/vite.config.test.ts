@@ -25,6 +25,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@lendpeak/engine': path.resolve(__dirname, '../packages/lendpeak-engine/dist/index.esm.js'),
     },
   },
 });

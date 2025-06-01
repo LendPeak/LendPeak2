@@ -608,7 +608,7 @@ class DemoDataService {
       let currentBalance = scenario.loanParameters.principal;
       let totalInterestPaid = 0;
       let totalPrincipalPaid = 0;
-      let totalFeesPaid = 0;
+      const totalFeesPaid = 0;
       
       if (scenario.paymentHistory) {
         scenario.paymentHistory.forEach(payment => {

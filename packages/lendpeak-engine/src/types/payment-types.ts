@@ -1,4 +1,5 @@
 import { Big } from 'big.js';
+import { Dayjs } from 'dayjs';
 
 /**
  * Payment frequency types
@@ -26,7 +27,7 @@ export type CalendarType =
  */
 export interface ScheduledPayment {
   paymentNumber: number;
-  dueDate: Date;
+  dueDate: Dayjs; // Changed from Date
   principal: Big;
   interest: Big;
   beginningBalance: Big;
@@ -40,7 +41,7 @@ export interface ScheduledPayment {
  */
 export interface AmortizationSchedule {
   payments: ScheduledPayment[];
-  totalPayments: number;
+  totalPayments: Big; // Changed from number to Big
   totalInterest: Big;
   totalPrincipal: Big;
   totalFees?: Big;
@@ -73,8 +74,8 @@ export type PaymentModificationType =
  */
 export interface PaymentModification {
   type: PaymentModificationType;
-  effectiveDate: Date;
-  endDate?: Date;
+  effectiveDate: Dayjs; // Changed from Date
+  endDate?: Dayjs; // Changed from Date
   modifiedPaymentAmount?: Big;
   deferredAmount?: Big;
   description: string;

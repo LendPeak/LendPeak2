@@ -105,7 +105,7 @@ export const ReportsPage = () => {
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     // Generate mock report data based on type
-    let reportData: any = {
+    const reportData: any = {
       id: reportId,
       generatedAt: new Date(),
       dateRange: {

@@ -148,7 +148,7 @@ export const LoanCalculatorPage = () => {
         
         // Create a simplified schedule showing daily interest accrual
         const schedule = [];
-        let balance = data.principal;
+        const balance = data.principal;
         for (let i = 1; i <= 30; i++) {
           const interestForDay = balance * dailyRate;
           schedule.push({
@@ -303,6 +303,7 @@ export const LoanCalculatorPage = () => {
                   </div>
                   <input
                     type="number"
+                    id="principal" // Added id
                     {...register('principal', { valueAsNumber: true })}
                     className="focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
                     placeholder="100,000"
@@ -320,6 +321,7 @@ export const LoanCalculatorPage = () => {
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <input
                     type="number"
+                    id="annualRate" // Added id
                     step="0.01"
                     {...register('annualRate', { valueAsNumber: true })}
                     className="focus:ring-primary-500 focus:border-primary-500 block w-full pr-10 sm:text-sm border-gray-300 rounded-md"
@@ -340,6 +342,7 @@ export const LoanCalculatorPage = () => {
                 </label>
                 <input
                   type="number"
+                  id="termMonths" // Added id
                   {...register('termMonths', { valueAsNumber: true })}
                   className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                   placeholder="360"
@@ -355,6 +358,7 @@ export const LoanCalculatorPage = () => {
                 </label>
                 <input
                   type="date"
+                  id="startDate" // Added id
                   {...register('startDate', { valueAsDate: true })}
                   className="mt-1 focus:ring-primary-500 focus:border-primary-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                 />
@@ -369,6 +373,7 @@ export const LoanCalculatorPage = () => {
                 </label>
                 <input
                   type="number"
+                  id="paymentDueDay" // Added id
                   {...register('paymentDueDay', { valueAsNumber: true })}
                   min="1"
                   max="31"
@@ -388,6 +393,7 @@ export const LoanCalculatorPage = () => {
                   Calculation Type
                 </label>
                 <select
+                  id="calculationType" // Added id
                   {...register('calculationType')}
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
                 >
@@ -407,6 +413,7 @@ export const LoanCalculatorPage = () => {
                   Calendar Type
                 </label>
                 <select
+                  id="calendarType" // Added id
                   {...register('calendarType')}
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
                 >
@@ -431,6 +438,7 @@ export const LoanCalculatorPage = () => {
                   Interest Accrual Timing
                 </label>
                 <select
+                  id="accrualTiming" // Added id
                   {...register('accrualTiming')}
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
                 >
@@ -450,6 +458,7 @@ export const LoanCalculatorPage = () => {
                   Rounding Method
                 </label>
                 <select
+                  id="roundingMethod" // Added id
                   {...register('roundingMethod')}
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
                 >

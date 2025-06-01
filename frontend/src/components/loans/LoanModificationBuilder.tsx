@@ -140,7 +140,7 @@ export const LoanModificationBuilder = ({ loan, isOpen, onClose, onSuccess }: Lo
     setIsCalculating(true);
     try {
       // Start with current loan parameters
-      let projectedParams = { ...loan.loanParameters };
+      const projectedParams = { ...loan.loanParameters };
       
       // Apply each modification in sequence
       modifications.forEach(mod => {
