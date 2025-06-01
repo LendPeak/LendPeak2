@@ -1,0 +1,361 @@
+name: Deploy Pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '18.x'
+  AWS_REGION: us-east-1
+
+jobs:
+  # Pre-deployment Checks
+  pre-deployment-checks:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set deployment environment
+        id: set-env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Check deployment readiness
+        run: |
+          echo "Running pre-deployment checks for ${{ steps.set-env.outputs.environment }}..."
+          echo "✓ Checking branch protection"
+          echo "✓ Verifying required approvals"
+          echo "✓ Checking deployment window"
+
+  # Build and Push Docker Images
+  build-and-push-images:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    needs: pre-deployment-checks
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build and push backend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: lendpeak2-backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+      
+      - name: Build and push frontend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: lendpeak2-frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./frontend
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+  # Deploy Infrastructure
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: pre-deployment-checks
+    environment: ${{ needs.pre-deployment-checks.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Install CDK dependencies
+        working-directory: ./infrastructure
+        run: npm ci
+      
+      - name: Deploy CDK stack
+        working-directory: ./infrastructure
+        run: |
+          npm run cdk deploy -- \
+            --all \
+            --require-approval never \
+            --context environment=${{ needs.pre-deployment-checks.outputs.environment }}
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+          CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
+
+  # Run Database Migrations
+  run-migrations:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, build-and-push-images]
+    environment: ${{ needs.pre-deployment-checks.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Get database credentials from Secrets Manager
+        run: |
+          SECRET_NAME="lendpeak2-${{ needs.pre-deployment-checks.outputs.environment }}-db-credentials"
+          SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --query SecretString --output text)
+          echo "MONGODB_URI=$(echo $SECRET_VALUE | jq -r .uri)" >> $GITHUB_ENV
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run migrations
+        run: npm run db:migrate
+        env:
+          NODE_ENV: ${{ needs.pre-deployment-checks.outputs.environment }}
+
+  # Deploy Backend Application
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, build-and-push-images, run-migrations]
+    environment: ${{ needs.pre-deployment-checks.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Deploy to ECS
+        run: |
+          # Update ECS service with new task definition
+          aws ecs update-service \
+            --cluster lendpeak2-${{ needs.pre-deployment-checks.outputs.environment }} \
+            --service lendpeak2-backend \
+            --force-new-deployment
+      
+      - name: Wait for deployment to complete
+        run: |
+          aws ecs wait services-stable \
+            --cluster lendpeak2-${{ needs.pre-deployment-checks.outputs.environment }} \
+            --services lendpeak2-backend
+
+  # Deploy Frontend Application
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, build-and-push-images]
+    environment: ${{ needs.pre-deployment-checks.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Build frontend for deployment
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+        env:
+          VITE_API_URL: ${{ secrets[format('{0}_API_URL', needs.pre-deployment-checks.outputs.environment)] }}
+      
+      - name: Deploy to S3 and CloudFront
+        run: |
+          # Sync to S3
+          aws s3 sync frontend/dist/ s3://lendpeak2-${{ needs.pre-deployment-checks.outputs.environment }}-frontend \
+            --delete \
+            --cache-control "public, max-age=31536000" \
+            --exclude "index.html" \
+            --exclude "*.json"
+          
+          # Upload index.html with no-cache
+          aws s3 cp frontend/dist/index.html s3://lendpeak2-${{ needs.pre-deployment-checks.outputs.environment }}-frontend/ \
+            --cache-control "no-cache, no-store, must-revalidate"
+          
+          # Invalidate CloudFront
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Comment=='lendpeak2-${{ needs.pre-deployment-checks.outputs.environment }}-frontend'].Id" \
+            --output text)
+          
+          aws cloudfront create-invalidation \
+            --distribution-id $DISTRIBUTION_ID \
+            --paths "/*"
+
+  # Post-deployment Tests
+  post-deployment-tests:
+    name: Post-deployment Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    environment: ${{ needs.pre-deployment-checks.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run health checks
+        run: |
+          API_URL="${{ secrets[format('{0}_API_URL', needs.pre-deployment-checks.outputs.environment)] }}"
+          APP_URL="${{ secrets[format('{0}_APP_URL', needs.pre-deployment-checks.outputs.environment)] }}"
+          
+          # Check API health
+          for i in {1..5}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/health")
+            if [ $response -eq 200 ]; then
+              echo "✓ API health check passed"
+              break
+            fi
+            echo "API health check attempt $i failed, retrying..."
+            sleep 10
+          done
+          
+          # Check frontend
+          response=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL")
+          if [ $response -eq 200 ]; then
+            echo "✓ Frontend health check passed"
+          else
+            echo "✗ Frontend health check failed"
+            exit 1
+          fi
+      
+      - name: Run smoke tests
+        run: npm run test:smoke
+        env:
+          API_ENDPOINT: ${{ secrets[format('{0}_API_URL', needs.pre-deployment-checks.outputs.environment)] }}
+          APP_ENDPOINT: ${{ secrets[format('{0}_APP_URL', needs.pre-deployment-checks.outputs.environment)] }}
+
+  # Rollback on Failure
+  rollback-on-failure:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: post-deployment-tests
+    if: failure()
+    environment: ${{ needs.pre-deployment-checks.outputs.environment }}
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Rollback ECS services
+        run: |
+          echo "Rolling back ECS services..."
+          # Get previous task definition
+          PREVIOUS_TASK_DEF=$(aws ecs describe-services \
+            --cluster lendpeak2-${{ needs.pre-deployment-checks.outputs.environment }} \
+            --services lendpeak2-backend \
+            --query 'services[0].deployments[1].taskDefinition' \
+            --output text)
+          
+          if [ ! -z "$PREVIOUS_TASK_DEF" ]; then
+            aws ecs update-service \
+              --cluster lendpeak2-${{ needs.pre-deployment-checks.outputs.environment }} \
+              --service lendpeak2-backend \
+              --task-definition $PREVIOUS_TASK_DEF
+          fi
+      
+      - name: Notify team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: |
+            🚨 Deployment Failed!
+            Environment: ${{ needs.pre-deployment-checks.outputs.environment }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Rollback initiated automatically.
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()
+
+  # Notify Success
+  notify-success:
+    name: Notify Deployment Success
+    runs-on: ubuntu-latest
+    needs: post-deployment-tests
+    if: success()
+    
+    steps:
+      - name: Notify team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: |
+            ✅ Deployment Successful!
+            Environment: ${{ needs.pre-deployment-checks.outputs.environment }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

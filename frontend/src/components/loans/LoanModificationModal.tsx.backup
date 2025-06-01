@@ -1,0 +1,510 @@
+import { useState, Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { XMarkIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { toast } from 'react-toastify';
+import { demoLoanStorage } from '../../services/demoLoanStorage';
+import DatePicker from 'react-datepicker';
+
+interface LoanModificationModalProps {
+  loan: any;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const modificationType = {
+  RATE_CHANGE: 'Interest Rate Change',
+  PAYMENT_DATE_CHANGE: 'Payment Date Change',
+  TERM_EXTENSION: 'Term Extension',
+  FORBEARANCE: 'Forbearance',
+  DEFERMENT: 'Deferment',
+  PRINCIPAL_REDUCTION: 'Principal Reduction',
+  PAYMENT_AMOUNT_CHANGE: 'Payment Amount Change',
+  OTHER: 'Other Modification',
+};
+
+const schema = yup.object({
+  modificationType: yup.string().required('Modification type is required'),
+  reason: yup.string().required('Reason is required').min(10, 'Please provide more details'),
+  effectiveDate: yup.date().required('Effective date is required'),
+  // Dynamic fields based on modification type
+  newRate: yup.number().when('modificationType', {
+    is: 'RATE_CHANGE',
+    then: (schema) => schema.required('New rate is required').min(0.01).max(50),
+  }),
+  newPaymentDate: yup.number().when('modificationType', {
+    is: 'PAYMENT_DATE_CHANGE',
+    then: (schema) => schema.required('New payment date is required').min(1).max(31),
+  }),
+  extensionMonths: yup.number().when('modificationType', {
+    is: 'TERM_EXTENSION',
+    then: (schema) => schema.required('Extension months is required').min(1).max(360),
+  }),
+  forbearanceMonths: yup.number().when('modificationType', {
+    is: 'FORBEARANCE',
+    then: (schema) => schema.required('Forbearance period is required').min(1).max(12),
+  }),
+  defermentMonths: yup.number().when('modificationType', {
+    is: 'DEFERMENT',
+    then: (schema) => schema.required('Deferment period is required').min(1).max(12),
+  }),
+  principalReduction: yup.number().when('modificationType', {
+    is: 'PRINCIPAL_REDUCTION',
+    then: (schema) => schema.required('Reduction amount is required').min(1),
+  }),
+  newPaymentAmount: yup.number().when('modificationType', {
+    is: 'PAYMENT_AMOUNT_CHANGE',
+    then: (schema) => schema.required('New payment amount is required').min(1),
+  }),
+  otherDescription: yup.string().when('modificationType', {
+    is: 'OTHER',
+    then: (schema) => schema.required('Description is required'),
+  }),
+  customerConsent: yup.boolean().oneOf([true], 'Customer consent is required'),
+  complianceReview: yup.boolean().oneOf([true], 'Compliance review is required'),
+});
+
+type FormData = yup.InferType<typeof schema>;
+
+export const LoanModificationModal = ({ loan, isOpen, onClose, onSuccess }: LoanModificationModalProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    reset,
+    control,
+  } = useForm<FormData>({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      effectiveDate: new Date(),
+    },
+  });
+
+  const selectedType = watch('modificationType');
+
+  const onSubmit = async (data: FormData) => {
+    setShowWarning(true);
+  };
+
+  const confirmModification = async () => {
+    setIsSubmitting(true);
+    try {
+      // Check if we're in demo mode
+      const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true' || !import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL === 'demo';
+      
+      if (isDemoMode) {
+        const formData = watch();
+        // Store modification in demo storage
+        await demoLoanStorage.addModification({
+          loanId: loan.id,
+          type: formData.modificationType,
+          date: new Date(),
+          changes: {
+            newRate: formData.newRate,
+            newPaymentDate: formData.newPaymentDate,
+            extensionMonths: formData.extensionMonths,
+            forbearanceMonths: formData.forbearanceMonths,
+            defermentMonths: formData.defermentMonths,
+            principalReduction: formData.principalReduction,
+            newPaymentAmount: formData.newPaymentAmount,
+            otherDescription: formData.otherDescription,
+          },
+          reason: formData.reason,
+          approvedBy: 'Demo User',
+        });
+      } else {
+        // In a real app, this would call the API
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
+      toast.success('Loan modification submitted successfully');
+      reset();
+      onSuccess();
+      onClose();
+    } catch (error) {
+      toast.error('Failed to submit modification');
+    } finally {
+      setIsSubmitting(false);
+      setShowWarning(false);
+    }
+  };
+
+  return (
+    <Transition.Root show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-[70]" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            >
+              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
+                <form onSubmit={handleSubmit(onSubmit)}>
+                  <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div className="flex items-center justify-between mb-5">
+                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
+                        Loan Modification - {loan.id}
+                      </Dialog.Title>
+                      <button
+                        type="button"
+                        className="rounded-md bg-white text-gray-400 hover:text-gray-500"
+                        onClick={onClose}
+                      >
+                        <XMarkIcon className="h-6 w-6" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Modification Type */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Modification Type
+                        </label>
+                        <select
+                          {...register('modificationType')}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                        >
+                          <option value="">Select a modification type</option>
+                          {Object.entries(modificationType).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.modificationType && (
+                          <p className="mt-1 text-sm text-red-600">{errors.modificationType.message}</p>
+                        )}
+                      </div>
+
+                      {/* Dynamic Fields Based on Type */}
+                      {selectedType === 'RATE_CHANGE' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            New Interest Rate (%)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            {...register('newRate', { valueAsNumber: true })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                            placeholder="5.5"
+                          />
+                          <p className="mt-1 text-sm text-gray-500">
+                            Current rate: {loan.loanParameters.interestRate}%
+                          </p>
+                          {errors.newRate && (
+                            <p className="mt-1 text-sm text-red-600">{errors.newRate.message}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {selectedType === 'PAYMENT_DATE_CHANGE' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            New Payment Day of Month
+                          </label>
+                          <input
+                            type="number"
+                            {...register('newPaymentDate', { valueAsNumber: true })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                            placeholder="15"
+                            min="1"
+                            max="31"
+                          />
+                          {errors.newPaymentDate && (
+                            <p className="mt-1 text-sm text-red-600">{errors.newPaymentDate.message}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {selectedType === 'TERM_EXTENSION' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Extension Period (Months)
+                          </label>
+                          <input
+                            type="number"
+                            {...register('extensionMonths', { valueAsNumber: true })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                            placeholder="12"
+                          />
+                          <p className="mt-1 text-sm text-gray-500">
+                            This will extend the loan term and may reduce monthly payments
+                          </p>
+                          {errors.extensionMonths && (
+                            <p className="mt-1 text-sm text-red-600">{errors.extensionMonths.message}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {selectedType === 'FORBEARANCE' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Forbearance Period (Months)
+                          </label>
+                          <input
+                            type="number"
+                            {...register('forbearanceMonths', { valueAsNumber: true })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                            placeholder="3"
+                          />
+                          <p className="mt-1 text-sm text-gray-500">
+                            Payments will be temporarily reduced or suspended
+                          </p>
+                          {errors.forbearanceMonths && (
+                            <p className="mt-1 text-sm text-red-600">{errors.forbearanceMonths.message}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {selectedType === 'DEFERMENT' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Deferment Period (Months)
+                          </label>
+                          <input
+                            type="number"
+                            {...register('defermentMonths', { valueAsNumber: true })}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                            placeholder="6"
+                          />
+                          <p className="mt-1 text-sm text-gray-500">
+                            Interest may continue to accrue during deferment
+                          </p>
+                          {errors.defermentMonths && (
+                            <p className="mt-1 text-sm text-red-600">{errors.defermentMonths.message}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {selectedType === 'PRINCIPAL_REDUCTION' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Principal Reduction Amount
+                          </label>
+                          <div className="mt-1 relative rounded-md shadow-sm">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <span className="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <input
+                              type="number"
+                              {...register('principalReduction', { valueAsNumber: true })}
+                              className="pl-7 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                              placeholder="5000"
+                            />
+                          </div>
+                          {errors.principalReduction && (
+                            <p className="mt-1 text-sm text-red-600">{errors.principalReduction.message}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {selectedType === 'PAYMENT_AMOUNT_CHANGE' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            New Payment Amount
+                          </label>
+                          <div className="mt-1 relative rounded-md shadow-sm">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <span className="text-gray-500 sm:text-sm">$</span>
+                            </div>
+                            <input
+                              type="number"
+                              {...register('newPaymentAmount', { valueAsNumber: true })}
+                              className="pl-7 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                              placeholder="1200"
+                            />
+                          </div>
+                          {errors.newPaymentAmount && (
+                            <p className="mt-1 text-sm text-red-600">{errors.newPaymentAmount.message}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {selectedType === 'OTHER' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Description
+                          </label>
+                          <textarea
+                            {...register('otherDescription')}
+                            rows={3}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                            placeholder="Describe the modification..."
+                          />
+                          {errors.otherDescription && (
+                            <p className="mt-1 text-sm text-red-600">{errors.otherDescription.message}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Common Fields */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Reason for Modification
+                        </label>
+                        <textarea
+                          {...register('reason')}
+                          rows={3}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                          placeholder="Explain why this modification is needed..."
+                        />
+                        {errors.reason && (
+                          <p className="mt-1 text-sm text-red-600">{errors.reason.message}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Effective Date
+                        </label>
+                        <Controller
+                          control={control}
+                          name="effectiveDate"
+                          render={({ field }) => (
+                            <DatePicker
+                              selected={field.value}
+                              onChange={field.onChange}
+                              dateFormat="MM/dd/yyyy"
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                              placeholderText="Select effective date"
+                              showMonthDropdown
+                              showYearDropdown
+                              dropdownMode="select"
+                              minDate={new Date()}
+                            />
+                          )}
+                        />
+                        {errors.effectiveDate && (
+                          <p className="mt-1 text-sm text-red-600">{errors.effectiveDate.message}</p>
+                        )}
+                      </div>
+
+                      {/* Compliance Checkboxes */}
+                      <div className="space-y-3">
+                        <div className="flex items-start">
+                          <input
+                            type="checkbox"
+                            {...register('customerConsent')}
+                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <label className="ml-3 text-sm text-gray-700">
+                            Customer has provided written consent for this modification
+                          </label>
+                        </div>
+                        {errors.customerConsent && (
+                          <p className="text-sm text-red-600">{errors.customerConsent.message}</p>
+                        )}
+
+                        <div className="flex items-start">
+                          <input
+                            type="checkbox"
+                            {...register('complianceReview')}
+                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <label className="ml-3 text-sm text-gray-700">
+                            This modification has been reviewed for regulatory compliance
+                          </label>
+                        </div>
+                        {errors.complianceReview && (
+                          <p className="text-sm text-red-600">{errors.complianceReview.message}</p>
+                        )}
+                      </div>
+
+                      {/* Warning Box */}
+                      <div className="rounded-md bg-yellow-50 p-4">
+                        <div className="flex">
+                          <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
+                          <div className="ml-3">
+                            <h3 className="text-sm font-medium text-yellow-800">Important Notice</h3>
+                            <div className="mt-2 text-sm text-yellow-700">
+                              <p>
+                                Loan modifications may affect the borrower's credit score and future
+                                borrowing ability. Ensure all regulatory requirements are met before
+                                proceeding.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="inline-flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 sm:ml-3 sm:w-auto disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'Processing...' : 'Submit Modification'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+
+                {/* Confirmation Dialog */}
+                {showWarning && (
+                  <div className="absolute inset-0 bg-white rounded-lg flex items-center justify-center">
+                    <div className="text-center px-6">
+                      <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-yellow-400" />
+                      <h3 className="mt-2 text-lg font-medium text-gray-900">Confirm Modification</h3>
+                      <p className="mt-2 text-sm text-gray-500">
+                        Are you sure you want to proceed with this loan modification? This action
+                        cannot be undone and will create a permanent record.
+                      </p>
+                      <div className="mt-6 flex justify-center space-x-3">
+                        <button
+                          onClick={confirmModification}
+                          disabled={isSubmitting}
+                          className="inline-flex justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50"
+                        >
+                          {isSubmitting ? 'Processing...' : 'Yes, Proceed'}
+                        </button>
+                        <button
+                          onClick={() => setShowWarning(false)}
+                          className="inline-flex justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition.Root>
+  );
+};

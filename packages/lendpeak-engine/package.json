@@ -1,0 +1,60 @@
+{
+  "name": "@lendpeak/engine",
+  "version": "1.0.0",
+  "description": "Stateless loan calculation engine for precise financial computations",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "loan",
+    "calculator",
+    "financial",
+    "amortization",
+    "interest",
+    "banking"
+  ],
+  "author": "LendPeak",
+  "license": "MIT",
+  "dependencies": {
+    "big.js": "^6.2.1",
+    "dayjs": "^1.11.10"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.5",
+    "@types/big.js": "^6.2.2",
+    "@types/jest": "^29.5.11",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "rollup": "^4.9.6",
+    "rollup-plugin-dts": "^6.1.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lendpeak/lendpeak-engine.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lendpeak/lendpeak-engine/issues"
+  },
+  "homepage": "https://github.com/lendpeak/lendpeak-engine#readme"
+}
