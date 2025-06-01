@@ -57,7 +57,7 @@ export class DocumentRepository {
   async findByEntity(
     entityType: 'loan' | 'user' | 'application',
     entityId: string,
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<IDocument[]> {
     return DocumentModel.find({
       entityType,
@@ -74,9 +74,9 @@ export class DocumentRepository {
    */
   async search(
     criteria: DocumentSearchCriteria,
-    limit: number = 100,
-    offset: number = 0,
-    session?: ClientSession
+    limit = 100,
+    offset = 0,
+    session?: ClientSession,
   ): Promise<{ documents: IDocument[]; total: number }> {
     const query: any = { isDeleted: criteria.isDeleted ?? false };
 
@@ -143,12 +143,12 @@ export class DocumentRepository {
   async update(
     documentId: string,
     updateData: Partial<IDocument>,
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<IDocument | null> {
     const document = await DocumentModel.findOneAndUpdate(
       { documentId, isDeleted: false },
       { $set: updateData },
-      { new: true, session }
+      { new: true, session },
     );
 
     if (document) {
@@ -164,7 +164,7 @@ export class DocumentRepository {
   async softDelete(
     documentId: string,
     deletedBy: string,
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<boolean> {
     const result = await DocumentModel.updateOne(
       { documentId, isDeleted: false },
@@ -175,7 +175,7 @@ export class DocumentRepository {
           deletedBy,
         },
       },
-      { session }
+      { session },
     );
 
     if (result.modifiedCount > 0) {
@@ -193,7 +193,7 @@ export class DocumentRepository {
     documentId: string,
     verifiedBy: string,
     notes?: string,
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<IDocument | null> {
     const updateData: any = {
       isVerified: true,
@@ -214,12 +214,12 @@ export class DocumentRepository {
   async shareWithUsers(
     documentId: string,
     userIds: string[],
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<IDocument | null> {
     return DocumentModel.findOneAndUpdate(
       { documentId, isDeleted: false },
       { $addToSet: { sharedWith: { $each: userIds } } },
-      { new: true, session }
+      { new: true, session },
     );
   }
 
@@ -229,12 +229,12 @@ export class DocumentRepository {
   async unshareWithUsers(
     documentId: string,
     userIds: string[],
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<IDocument | null> {
     return DocumentModel.findOneAndUpdate(
       { documentId, isDeleted: false },
       { $pull: { sharedWith: { $in: userIds } } },
-      { new: true, session }
+      { new: true, session },
     );
   }
 
@@ -243,7 +243,7 @@ export class DocumentRepository {
    */
   async getStatistics(
     entityType?: 'loan' | 'user' | 'application',
-    entityId?: string
+    entityId?: string,
   ): Promise<DocumentStatistics> {
     const matchStage: any = { isDeleted: false };
     
@@ -336,8 +336,8 @@ export class DocumentRepository {
    * Find unverified documents older than specified days
    */
   async findUnverifiedDocuments(
-    daysOld: number = 7,
-    session?: ClientSession
+    daysOld = 7,
+    session?: ClientSession,
   ): Promise<IDocument[]> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
@@ -356,12 +356,12 @@ export class DocumentRepository {
    */
   async updateLastAccessed(
     documentId: string,
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<void> {
     await DocumentModel.updateOne(
       { documentId, isDeleted: false },
       { $set: { lastAccessedAt: new Date() } },
-      { session }
+      { session },
     );
   }
 
@@ -369,8 +369,8 @@ export class DocumentRepository {
    * Get documents requiring verification
    */
   async getDocumentsRequiringVerification(
-    limit: number = 50,
-    session?: ClientSession
+    limit = 50,
+    session?: ClientSession,
   ): Promise<IDocument[]> {
     return DocumentModel.find({
       isVerified: false,
@@ -396,12 +396,12 @@ export class DocumentRepository {
   async bulkUpdate(
     documentIds: string[],
     updateData: Partial<IDocument>,
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<number> {
     const result = await DocumentModel.updateMany(
       { documentId: { $in: documentIds }, isDeleted: false },
       { $set: updateData },
-      { session }
+      { session },
     );
 
     return result.modifiedCount;
@@ -413,13 +413,13 @@ export class DocumentRepository {
   async createVersion(
     originalDocumentId: string,
     newDocumentData: Partial<IDocument>,
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<IDocument> {
     // Mark current version as not latest
     await DocumentModel.updateOne(
       { documentId: originalDocumentId },
       { $set: { isLatestVersion: false } },
-      { session }
+      { session },
     );
 
     // Create new version
@@ -430,7 +430,7 @@ export class DocumentRepository {
         version: (newDocumentData.version || 1) + 1,
         isLatestVersion: true,
       },
-      session
+      session,
     );
 
     logger.info('Document version created', {
@@ -447,7 +447,7 @@ export class DocumentRepository {
    */
   async getVersionHistory(
     documentId: string,
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<IDocument[]> {
     const document = await this.findById(documentId, session);
     if (!document) {
@@ -461,7 +461,9 @@ export class DocumentRepository {
     // Traverse backward through versions
     while (currentDoc.previousVersionId) {
       const prevDoc = await this.findById(currentDoc.previousVersionId, session);
-      if (!prevDoc) break;
+      if (!prevDoc) {
+        break;
+      }
       versions.push(prevDoc);
       currentDoc = prevDoc;
     }

@@ -132,7 +132,7 @@ export class DatabaseBackupService {
   /**
    * Deletes old backups based on retention policy
    */
-  async cleanupOldBackups(retentionDays: number = 30): Promise<void> {
+  async cleanupOldBackups(retentionDays = 30): Promise<void> {
     try {
       const files = await this.listBackups();
       const cutoffDate = new Date();

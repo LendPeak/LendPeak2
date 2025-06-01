@@ -7,8 +7,8 @@ export const authorize = (...allowedRoles: UserRole[]) => {
       res.status(401).json({
         error: {
           code: 'UNAUTHORIZED',
-          message: 'Authentication required'
-        }
+          message: 'Authentication required',
+        },
       });
       return;
     }
@@ -20,8 +20,8 @@ export const authorize = (...allowedRoles: UserRole[]) => {
       res.status(403).json({
         error: {
           code: 'FORBIDDEN',
-          message: 'Insufficient permissions'
-        }
+          message: 'Insufficient permissions',
+        },
       });
       return;
     }

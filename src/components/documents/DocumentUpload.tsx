@@ -157,7 +157,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         uploadMutation.mutate(file);
       });
     },
-    [uploadMutation, maxFileSize, acceptedFileTypes]
+    [uploadMutation, maxFileSize, acceptedFileTypes],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -186,10 +186,10 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
           border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
           transition-colors duration-200
           ${
-            isDragActive
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400'
-          }
+    isDragActive
+      ? 'border-blue-500 bg-blue-50'
+      : 'border-gray-300 hover:border-gray-400'
+    }
         `}
       >
         <input {...getInputProps()} />
@@ -220,9 +220,9 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                   {getFileIcon(
                     acceptedFileTypes.find((type) =>
                       upload.fileName.toLowerCase().endsWith(
-                        type.split('/')[1]
-                      )
-                    ) || 'default'
+                        type.split('/')[1],
+                      ),
+                    ) || 'default',
                   )}
                   <span className="text-sm font-medium truncate max-w-xs">
                     {upload.fileName}

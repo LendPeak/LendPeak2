@@ -25,6 +25,7 @@ import { RecommendationsPage } from '../pages/recommendations/RecommendationsPag
 import { DemoAuthProvider } from '../contexts/DemoAuthContext';
 import { AuthProvider } from '../store/auth-context';
 import { WebSocketProvider } from '../contexts/WebSocketContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Added
 
 // Mock react-router-dom for testing
 const mockNavigate = vi.fn();
@@ -70,16 +71,26 @@ vi.mock('recharts', () => ({
 }));
 
 // Test wrapper component
+const queryClient = new QueryClient({ // Added: Create a new query client for tests
+  defaultOptions: {
+    queries: {
+      retry: false, // Disable retries for tests for faster failures
+    },
+  },
+});
+
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
   <BrowserRouter>
-    <AuthProvider>
-      <DemoAuthProvider>
-        <WebSocketProvider>
-          {children}
-          <ToastContainer />
-        </WebSocketProvider>
-      </DemoAuthProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}> {/* Added */}
+      <AuthProvider>
+        <DemoAuthProvider>
+          <WebSocketProvider>
+            {children}
+            <ToastContainer />
+          </WebSocketProvider>
+        </DemoAuthProvider>
+      </AuthProvider>
+    </QueryClientProvider> {/* Added */}
   </BrowserRouter>
 );
 

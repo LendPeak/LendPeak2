@@ -76,7 +76,7 @@ export class S3Stack extends cdk.Stack {
       'DocumentOAI',
       {
         comment: 'OAI for LendPeak2 document bucket',
-      }
+      },
     );
 
     // Grant CloudFront access to S3 bucket
@@ -86,10 +86,10 @@ export class S3Stack extends cdk.Stack {
         resources: [this.documentBucket.arnForObjects('*')],
         principals: [
           new iam.CanonicalUserPrincipal(
-            originAccessIdentity.cloudFrontOriginAccessIdentityS3CanonicalUserId
+            originAccessIdentity.cloudFrontOriginAccessIdentityS3CanonicalUserId,
           ),
         ],
-      })
+      }),
     );
 
     // CloudFront distribution for document delivery
@@ -136,7 +136,7 @@ export class S3Stack extends cdk.Stack {
           removalPolicy: cdk.RemovalPolicy.DESTROY,
           autoDeleteObjects: true,
         }),
-      }
+      },
     );
 
     // Outputs

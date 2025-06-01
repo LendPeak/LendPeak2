@@ -75,7 +75,7 @@ router.get('/revenue',
     
     const revenue = await analyticsService.getRevenueAnalysis(
       new Date(startDate as string),
-      new Date(endDate as string)
+      new Date(endDate as string),
     );
     
     res.json({
@@ -83,7 +83,7 @@ router.get('/revenue',
       period: { startDate, endDate },
       timestamp: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -102,7 +102,7 @@ router.get('/user-growth/:year',
       year,
       timestamp: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -131,7 +131,7 @@ router.get('/collection-efficiency',
       data: efficiency,
       timestamp: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -147,7 +147,7 @@ router.get('/risk',
       data: risk,
       timestamp: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -166,7 +166,7 @@ router.post('/custom-report',
       data: report,
       filters,
     });
-  })
+  }),
 );
 
 /**
@@ -182,23 +182,23 @@ router.post('/export',
     
     let data;
     switch (type) {
-      case 'dashboard':
-        data = await analyticsService.getDashboardMetrics();
-        break;
-      case 'portfolio':
-        data = await analyticsService.getLoanPortfolioAnalysis();
-        break;
-      case 'performance':
-        data = await analyticsService.getLoanPerformanceMetrics();
-        break;
-      default:
-        res.status(400).json({
-          error: {
-            code: 'INVALID_TYPE',
-            message: 'Invalid analytics type for export',
-          },
-        });
-        return;
+    case 'dashboard':
+      data = await analyticsService.getDashboardMetrics();
+      break;
+    case 'portfolio':
+      data = await analyticsService.getLoanPortfolioAnalysis();
+      break;
+    case 'performance':
+      data = await analyticsService.getLoanPerformanceMetrics();
+      break;
+    default:
+      res.status(400).json({
+        error: {
+          code: 'INVALID_TYPE',
+          message: 'Invalid analytics type for export',
+        },
+      });
+      return;
     }
     
     const buffer = await analyticsService.exportAnalytics(format, data);
@@ -212,7 +212,7 @@ router.post('/export',
     res.setHeader('Content-Type', contentTypes[format as keyof typeof contentTypes]);
     res.setHeader('Content-Disposition', `attachment; filename="analytics-${type}-${Date.now()}.${format}"`);
     res.send(buffer);
-  })
+  }),
 );
 
 /**
@@ -226,7 +226,7 @@ router.get('/realtime',
       message: 'Connect via WebSocket for real-time analytics',
       instructions: 'Use socket.emit("analytics:subscribe", { metrics: ["dashboard", "performance"] })',
     });
-  })
+  }),
 );
 
 export { router as analyticsRouter };

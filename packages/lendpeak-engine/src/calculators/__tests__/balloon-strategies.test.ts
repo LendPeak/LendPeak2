@@ -6,8 +6,9 @@ import {
 } from '../balloon-strategies';
 import { BalloonDetectionResult } from '../../types/balloon-payment-types';
 import { AmortizationSchedule, ScheduledPayment } from '../../types/payment-types';
-import { LoanTerms } from '../../types/loan';
-import { addMonths } from '../../utils/date-utils';
+// import { LoanTerms } from '../../types/loan'; // Old import
+import { LoanTerms } from '../../types'; // Corrected import
+import { addMonthsWithEndOfMonth, parseDate } from '../../utils/date-utils'; // Import correct addMonths for Dayjs
 
 describe('Balloon Payment Strategies', () => {
   const createTestSchedule = (payments: number[]): AmortizationSchedule => {
@@ -20,7 +21,8 @@ describe('Balloon Payment Strategies', () => {
       
       return {
         paymentNumber: index + 1,
-        dueDate: addMonths(new Date('2024-01-01'), index),
+        // dueDate: addMonths(new Date('2024-01-01'), index), // Old: Used Date-based addMonths
+        dueDate: addMonthsWithEndOfMonth(parseDate('2024-01-01'), index), // New: Use Dayjs-based addMonths
         principal: principal,
         interest: interest,
         beginningBalance: beginningBalance,
@@ -38,13 +40,18 @@ describe('Balloon Payment Strategies', () => {
 
   const createTestTerms = (): LoanTerms => ({
     principal: new Big(100000),
-    annualRate: new Big(5),
+    // annualRate: new Big(5), // Old field name
+    annualInterestRate: new Big(5), // New field name from types/index.ts LoanTerms
     termMonths: 60,
     paymentFrequency: 'monthly',
-    startDate: new Date('2024-01-01'),
-    firstPaymentDate: new Date('2024-02-01'),
-    maturityDate: new Date('2028-12-01'),
-    calendarType: '30/360',
+    // startDate: new Date('2024-01-01'), // Old type
+    startDate: parseDate('2024-01-01'), // New type Dayjs
+    // firstPaymentDate: new Date('2024-02-01'), // Old type
+    firstPaymentDate: parseDate('2024-02-01'), // New type Dayjs
+    // maturityDate: new Date('2028-12-01'), // This field is not in types/index.ts LoanTerms
+    // calendarType: '30/360', // This field is not in types/index.ts LoanTerms
+    interestType: 'amortized', // Added, as it's in types/index.ts LoanTerms
+    dayCountConvention: '30/360', // Added, as it's in types/index.ts LoanTerms
     roundingConfig: {
       method: 'HALF_UP',
       decimalPlaces: 2
@@ -59,7 +66,8 @@ describe('Balloon Payment Strategies', () => {
     detected: true,
     payment: {
       paymentNumber,
-      dueDate: addMonths(new Date('2024-01-01'), paymentNumber - 1),
+      // Cleaned up duplicated/old lines and use Dayjs-compatible addMonthsWithEndOfMonth
+      dueDate: addMonthsWithEndOfMonth(parseDate('2024-01-01'), paymentNumber - 1),
       amount: new Big(amount),
       regularPaymentAmount: new Big(regularAmount)
     },

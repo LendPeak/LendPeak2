@@ -16,7 +16,7 @@ export const formatCurrency = (amount: number | string): string => {
 /**
  * Format a number as percentage
  */
-export const formatPercentage = (value: number | string, decimals: number = 2): string => {
+export const formatPercentage = (value: number | string, decimals = 2): string => {
   const num = typeof value === 'string' ? parseFloat(value) : value;
   return `${(num * 100).toFixed(decimals)}%`;
 };
@@ -24,7 +24,7 @@ export const formatPercentage = (value: number | string, decimals: number = 2): 
 /**
  * Format a date
  */
-export const formatDate = (date: string | Date, formatString: string = 'MMM d, yyyy'): string => {
+export const formatDate = (date: string | Date, formatString = 'MMM d, yyyy'): string => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
   return format(dateObj, formatString);
 };
@@ -41,13 +41,15 @@ export const formatRelativeTime = (date: string | Date): string => {
  * Format file size
  */
 export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
 
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))  } ${  sizes[i]}`;
 };
 
 /**
@@ -85,7 +87,9 @@ export const formatPhoneNumber = (phone: string): string => {
  * Format SSN (last 4 digits only)
  */
 export const formatSSN = (ssn: string): string => {
-  if (!ssn || ssn.length < 4) return '****';
+  if (!ssn || ssn.length < 4) {
+    return '****';
+  }
   return `***-**-${ssn.slice(-4)}`;
 };
 
@@ -93,7 +97,9 @@ export const formatSSN = (ssn: string): string => {
  * Format account number (masked)
  */
 export const formatAccountNumber = (accountNumber: string): string => {
-  if (!accountNumber || accountNumber.length < 4) return '****';
+  if (!accountNumber || accountNumber.length < 4) {
+    return '****';
+  }
   const lastFour = accountNumber.slice(-4);
   const masked = '*'.repeat(Math.max(0, accountNumber.length - 4));
   return masked + lastFour;
@@ -121,9 +127,11 @@ export const formatDuration = (months: number): string => {
 /**
  * Truncate text with ellipsis
  */
-export const truncateText = (text: string, maxLength: number = 50): string => {
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + '...';
+export const truncateText = (text: string, maxLength = 50): string => {
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return `${text.substring(0, maxLength - 3)  }...`;
 };
 
 /**
@@ -161,6 +169,8 @@ export const formatCreditScore = (score: number): { score: string; rating: strin
  * Pluralize a word
  */
 export const pluralize = (count: number, singular: string, plural?: string): string => {
-  if (count === 1) return `${count} ${singular}`;
-  return `${count} ${plural || singular + 's'}`;
+  if (count === 1) {
+    return `${count} ${singular}`;
+  }
+  return `${count} ${plural || `${singular  }s`}`;
 };

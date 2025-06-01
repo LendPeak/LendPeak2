@@ -46,13 +46,14 @@ export function calculateAmortizingPayment(
   principal: Big,
   annualRate: Big,
   numberOfPayments: number,
-  paymentFrequency: PaymentFrequency,
-  roundingConfig?: any
+  paymentFrequency: PaymentFrequency
+  // roundingConfig?: any removed
 ): Big {
   // If interest rate is zero, simply divide principal by number of payments
   if (isZero(annualRate)) {
     const payment = safeDivide(principal, toBig(numberOfPayments));
-    return roundingConfig ? roundMoney(payment, roundingConfig) : payment;
+    // return roundingConfig ? roundMoney(payment, roundingConfig) : payment;
+    return payment;
   }
   
   // Calculate period interest rate
@@ -65,7 +66,8 @@ export function calculateAmortizingPayment(
   const denominator = compoundFactor.minus(1);
   
   const payment = safeDivide(numerator, denominator);
-  return roundingConfig ? roundMoney(payment, roundingConfig) : payment;
+  // return roundingConfig ? roundMoney(payment, roundingConfig) : payment;
+  return payment;
 }
 
 /**
@@ -74,14 +76,15 @@ export function calculateAmortizingPayment(
 export function calculateInterestOnlyPayment(
   principal: Big,
   annualRate: Big,
-  paymentFrequency: PaymentFrequency,
-  roundingConfig?: any
+  paymentFrequency: PaymentFrequency
+  // roundingConfig?: any removed
 ): Big {
   const periodsPerYear = getPaymentPeriodsPerYear(paymentFrequency);
   const periodRate = safeDivide(annualRate, toBig(periodsPerYear * 100));
   
   const payment = principal.times(periodRate);
-  return roundingConfig ? roundMoney(payment, roundingConfig) : payment;
+  // return roundingConfig ? roundMoney(payment, roundingConfig) : payment;
+  return payment;
 }
 
 /**
@@ -92,14 +95,15 @@ export function calculatePaymentWithBalloon(
   annualRate: Big,
   numberOfPayments: number,
   balloonAmount: Big,
-  paymentFrequency: PaymentFrequency,
-  roundingConfig?: any
+  paymentFrequency: PaymentFrequency
+  // roundingConfig?: any removed
 ): Big {
   // If interest rate is zero
   if (isZero(annualRate)) {
     const principalToPay = principal.minus(balloonAmount);
     const payment = safeDivide(principalToPay, toBig(numberOfPayments));
-    return roundingConfig ? roundMoney(payment, roundingConfig) : payment;
+    // return roundingConfig ? roundMoney(payment, roundingConfig) : payment;
+    return payment;
   }
   
   // Calculate present value of balloon payment
@@ -114,8 +118,8 @@ export function calculatePaymentWithBalloon(
     adjustedPrincipal,
     annualRate,
     numberOfPayments,
-    paymentFrequency,
-    roundingConfig
+    paymentFrequency
+    // roundingConfig removed
   );
 }
 
@@ -128,57 +132,57 @@ export function calculateLoanPayment(terms: LoanTerms): PaymentCalculationResult
     terms.paymentFrequency
   );
   
-  let monthlyPayment: Big;
+  let rawMonthlyPayment: Big;
   
   // Calculate payment based on loan type and balloon
   if (terms.balloonPayment && terms.balloonPayment.gt(0)) {
-    monthlyPayment = calculatePaymentWithBalloon(
+    rawMonthlyPayment = calculatePaymentWithBalloon(
       terms.principal,
       terms.annualInterestRate,
       numberOfPayments,
       terms.balloonPayment,
-      terms.paymentFrequency,
-      terms.roundingConfig
+      terms.paymentFrequency
+      // terms.roundingConfig removed
     );
   } else if (terms.interestType === 'simple') {
-    monthlyPayment = calculateInterestOnlyPayment(
+    rawMonthlyPayment = calculateInterestOnlyPayment(
       terms.principal,
       terms.annualInterestRate,
-      terms.paymentFrequency,
-      terms.roundingConfig
+      terms.paymentFrequency
+      // terms.roundingConfig removed
     );
   } else {
-    monthlyPayment = calculateAmortizingPayment(
+    rawMonthlyPayment = calculateAmortizingPayment(
       terms.principal,
       terms.annualInterestRate,
       numberOfPayments,
-      terms.paymentFrequency,
-      terms.roundingConfig
+      terms.paymentFrequency
+      // terms.roundingConfig removed
     );
   }
   
-  // Calculate totals with rounding
-  const totalRegularPayments = monthlyPayment.times(numberOfPayments);
+  // Calculate totals using raw monthly payment for precision
+  const totalRegularPayments = rawMonthlyPayment.times(numberOfPayments);
   const totalPayments = totalRegularPayments.plus(terms.balloonPayment || 0);
-  const totalInterest = totalPayments.minus(terms.principal);
+  const totalInterest = totalPayments.minus(terms.principal); // This is now based on rawMonthlyPayment
   
-  // Round the final results
-  const roundedMonthlyPayment = terms.roundingConfig ? roundMoney(monthlyPayment, terms.roundingConfig) : monthlyPayment;
+  // Round the final results for output
+  const roundedMonthlyPayment = terms.roundingConfig ? roundMoney(rawMonthlyPayment, terms.roundingConfig) : rawMonthlyPayment;
   const roundedTotalInterest = terms.roundingConfig ? roundMoney(totalInterest, terms.roundingConfig) : totalInterest;
   const roundedTotalPayments = terms.roundingConfig ? roundMoney(totalPayments, terms.roundingConfig) : totalPayments;
   
-  // Calculate effective interest rate
+  // Calculate effective interest rate using the raw monthly payment for accuracy
   const effectiveInterestRate = calculateEffectiveRate(
     terms.principal,
-    monthlyPayment,
+    rawMonthlyPayment,
     numberOfPayments,
     terms.paymentFrequency,
     terms.balloonPayment
   );
   
   return {
-    monthlyPayment: roundedMonthlyPayment,
-    totalInterest: roundedTotalInterest,
+    monthlyPayment: roundedMonthlyPayment, // e.g. 1013.37
+    totalInterest: roundedTotalInterest, // e.g. 164813.42 after rounding the precise total
     totalPayments: roundedTotalPayments,
     effectiveInterestRate,
   };

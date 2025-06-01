@@ -234,7 +234,7 @@ export const EnhancedLoanModificationBuilder = ({
     setIsCalculating(true);
     try {
       // Start with current loan parameters
-      let projectedParams = { ...loan.loanParameters };
+      const projectedParams = { ...loan.loanParameters };
       
       // Apply each modification in sequence
       modifications.forEach(mod => {

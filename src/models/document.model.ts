@@ -213,7 +213,9 @@ DocumentSchema.virtual('url').get(function() {
 
 // Virtual for thumbnail URL
 DocumentSchema.virtual('thumbnailUrl').get(function() {
-  if (!this.thumbnailKey) return null;
+  if (!this.thumbnailKey) {
+    return null;
+  }
   return `/api/v1/documents/${this.documentId}/thumbnail`;
 });
 
@@ -269,7 +271,7 @@ DocumentSchema.statics.findExpiredDocuments = function() {
   });
 };
 
-DocumentSchema.statics.findUnverifiedDocuments = function(daysOld: number = 7) {
+DocumentSchema.statics.findUnverifiedDocuments = function(daysOld = 7) {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - daysOld);
   

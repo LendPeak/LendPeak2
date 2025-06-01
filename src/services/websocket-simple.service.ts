@@ -148,7 +148,9 @@ export class SimpleWebSocketService extends EventEmitter {
   }
 
   private trackConnection(socket: AuthSocket): void {
-    if (!socket.userId) return;
+    if (!socket.userId) {
+      return;
+    }
 
     let userSockets = this.connectionStats.get(socket.userId);
     if (!userSockets) {
@@ -159,7 +161,9 @@ export class SimpleWebSocketService extends EventEmitter {
   }
 
   private untrackConnection(socket: AuthSocket): void {
-    if (!socket.userId) return;
+    if (!socket.userId) {
+      return;
+    }
 
     const userSockets = this.connectionStats.get(socket.userId);
     if (userSockets) {
@@ -254,7 +258,7 @@ export class SimpleWebSocketService extends EventEmitter {
       timestamp: new Date(),
     });
 
-    logger.info(`Broadcasted system notification:`, notification.type);
+    logger.info('Broadcasted system notification:', notification.type);
   }
 
   /**
@@ -310,7 +314,7 @@ export class SimpleWebSocketService extends EventEmitter {
   /**
    * Disconnect all sockets for a user
    */
-  disconnectUser(userId: string, reason: string = 'Administrative disconnect'): void {
+  disconnectUser(userId: string, reason = 'Administrative disconnect'): void {
     const userSockets = this.connectionStats.get(userId);
     if (userSockets) {
       for (const socketId of userSockets) {

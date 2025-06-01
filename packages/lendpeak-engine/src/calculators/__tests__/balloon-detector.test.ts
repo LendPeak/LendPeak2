@@ -9,16 +9,18 @@ import {
 } from '../balloon-detector';
 import { BalloonDetectionConfig } from '../../types/balloon-payment-types';
 import { AmortizationSchedule, ScheduledPayment } from '../../types/payment-types';
+import { parseDate } from '../../utils/date-utils'; // Import parseDate
+import { Dayjs } from 'dayjs'; // Import Dayjs
 
 describe('Balloon Payment Detection', () => {
   const createTestPayment = (
     paymentNumber: number,
     principal: number,
     interest: number,
-    dueDate: Date = new Date()
+    dueDate: Dayjs = parseDate('2024-01-01') // Changed to Dayjs and use parseDate
   ): ScheduledPayment => ({
     paymentNumber,
-    dueDate,
+    dueDate, // Now Dayjs
     principal: new Big(principal),
     interest: new Big(interest),
     beginningBalance: new Big(0),
@@ -202,7 +204,7 @@ describe('Balloon Payment Detection', () => {
         detected: true,
         payment: {
           paymentNumber: 12,
-          dueDate: new Date(),
+          dueDate: parseDate(new Date().toISOString()), // Changed to Dayjs
           amount: new Big(1800),
           regularPaymentAmount: new Big(1000)
         },
@@ -223,7 +225,7 @@ describe('Balloon Payment Detection', () => {
         detected: true,
         payment: {
           paymentNumber: 12,
-          dueDate: new Date(),
+          dueDate: parseDate(new Date().toISOString()), // Changed to Dayjs
           amount: new Big(3500),
           regularPaymentAmount: new Big(1000)
         },
@@ -246,7 +248,7 @@ describe('Balloon Payment Detection', () => {
         detected: true,
         payment: {
           paymentNumber: 12,
-          dueDate: new Date(),
+          dueDate: parseDate(new Date().toISOString()), // Changed to Dayjs
           amount: new Big(2000),
           regularPaymentAmount: new Big(1000)
         },
@@ -287,7 +289,7 @@ describe('Balloon Payment Detection', () => {
         detected: true,
         payment: {
           paymentNumber: 12,
-          dueDate: new Date(),
+          dueDate: parseDate(new Date().toISOString()), // Changed to Dayjs
           amount: new Big(1500),
           regularPaymentAmount: new Big(1000)
         },
@@ -309,7 +311,7 @@ describe('Balloon Payment Detection', () => {
 
   describe('calculateBalloonNotificationSchedule', () => {
     it('should calculate notification dates', () => {
-      const balloonDate = new Date('2024-12-31');
+      const balloonDate = parseDate('2024-12-31'); // Changed to Dayjs
       const notificationDays = [180, 90, 30, 15];
       
       const dates = calculateBalloonNotificationSchedule(
@@ -321,7 +323,8 @@ describe('Balloon Payment Detection', () => {
       
       // Check days difference instead of exact dates to avoid timezone issues
       const daysDiffs = dates.map(d => 
-        Math.round((balloonDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24))
+        // Math.round((balloonDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)) // Old Date logic
+        Math.round(balloonDate.diff(d, 'day', true)) // Dayjs diff logic (true for float)
       );
       
       expect(daysDiffs[0]).toBe(180);
@@ -331,7 +334,7 @@ describe('Balloon Payment Detection', () => {
     });
 
     it('should include state minimum notification days', () => {
-      const balloonDate = new Date('2024-12-31');
+      const balloonDate = parseDate('2024-12-31'); // Changed to Dayjs
       const notificationDays = [30, 15]; // Missing CA's 90-day requirement
       
       const dates = calculateBalloonNotificationSchedule(
@@ -343,14 +346,15 @@ describe('Balloon Payment Detection', () => {
       expect(dates).toHaveLength(3);
       expect(dates.some(d => {
         const daysBefore = Math.round(
-          (balloonDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)
+          // (balloonDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24) // Old Date logic
+          balloonDate.diff(d, 'day', true) // Dayjs diff logic
         );
         return daysBefore === 90;
       })).toBe(true);
     });
 
     it('should sort notification dates properly', () => {
-      const balloonDate = new Date('2024-12-31');
+      const balloonDate = parseDate('2024-12-31'); // Changed to Dayjs
       const notificationDays = [30, 180, 15, 90]; // Out of order
       
       const dates = calculateBalloonNotificationSchedule(
@@ -359,9 +363,9 @@ describe('Balloon Payment Detection', () => {
       );
       
       // Should be sorted with earliest notification first
-      expect(dates[0] < dates[1]).toBe(true);
-      expect(dates[1] < dates[2]).toBe(true);
-      expect(dates[2] < dates[3]).toBe(true);
+      expect(dates[0].isBefore(dates[1])).toBe(true); // Use Dayjs isBefore
+      expect(dates[1].isBefore(dates[2])).toBe(true); // Use Dayjs isBefore
+      expect(dates[2].isBefore(dates[3])).toBe(true); // Use Dayjs isBefore
     });
   });
 });

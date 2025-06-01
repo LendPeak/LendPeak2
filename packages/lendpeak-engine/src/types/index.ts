@@ -57,6 +57,11 @@ export interface Payment {
   remainingBalance: Big;
   cumulativeInterest: Big;
   cumulativePrincipal: Big;
+  // Added to align with ScheduledPayment from payment-types.ts
+  beginningBalance: Big;
+  endingBalance: Big;
+  fees?: Big;
+  escrow?: Big;
 }
 
 export interface AmortizationSchedule {

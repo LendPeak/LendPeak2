@@ -25,7 +25,7 @@ const userProfileSchema = yup.object({
     'business',
     'medical',
     'vacation',
-    'other'
+    'other',
   ]).required(),
   homeOwnership: yup.string().oneOf(['own', 'rent', 'mortgage']),
   monthlyIncome: yup.number().min(0),
@@ -80,7 +80,7 @@ router.post('/loan-products',
         requestedAnalysis: new Date(),
       },
     });
-  })
+  }),
 );
 
 /**
@@ -96,7 +96,7 @@ router.post('/affordability',
       data: affordability,
       calculatedAt: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -122,7 +122,7 @@ router.post('/predict-success',
       },
       predictedAt: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -154,7 +154,7 @@ router.get('/similar-loans',
     res.json({
       data: similarLoans.map(loan => ({
         amount: loan.principal?.toString(),
-        rate: loan.interestRate?.times(100).toFixed(2) + '%',
+        rate: `${loan.interestRate?.times(100).toFixed(2)  }%`,
         term: loan.term,
         status: loan.status,
         purpose: loan.purpose,
@@ -162,7 +162,7 @@ router.get('/similar-loans',
       criteria: profile,
       found: similarLoans.length,
     });
-  })
+  }),
 );
 
 /**
@@ -183,7 +183,7 @@ router.post('/refinance',
       },
       analyzedAt: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -196,7 +196,7 @@ router.get('/tips',
       creditScore, 
       debtToIncomeRatio, 
       paymentHistory, 
-      savingsBalance 
+      savingsBalance,
     } = req.query;
 
     const profile = {
@@ -217,7 +217,7 @@ router.get('/tips',
       },
       generatedAt: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -234,7 +234,7 @@ router.post('/train-model',
       status: 'success',
       trainedAt: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -295,7 +295,7 @@ router.get('/loan-match',
       },
       matches: filteredRecommendations.length,
     });
-  })
+  }),
 );
 
 /**
@@ -326,7 +326,7 @@ router.get('/market-rates',
       data: marketRates,
       disclaimer: 'Rates are estimates and may vary based on individual qualifications',
     });
-  })
+  }),
 );
 
 export { router as recommendationsRouter };

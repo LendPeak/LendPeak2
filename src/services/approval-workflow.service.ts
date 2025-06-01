@@ -222,7 +222,7 @@ export class ApprovalWorkflowService {
   async processLoanApplication(
     loan: ILoan,
     user: IUser,
-    options: { skipManualReview?: boolean } = {}
+    options: { skipManualReview?: boolean } = {},
   ): Promise<ApprovalResult> {
     try {
       logger.info(`Processing loan application ${loan._id} for user ${user._id}`);
@@ -285,28 +285,28 @@ export class ApprovalWorkflowService {
         name: 'Credit Score',
         value: this.getCreditScore(user),
         impact: this.getCreditScore(user) >= 700 ? 'positive' : 
-               this.getCreditScore(user) >= 600 ? 'neutral' : 'negative',
+          this.getCreditScore(user) >= 600 ? 'neutral' : 'negative',
         weight: 0.3,
       },
       {
         name: 'Debt-to-Income Ratio',
         value: this.getDebtToIncomeRatio(loan, user) * 100,
         impact: this.getDebtToIncomeRatio(loan, user) <= 0.3 ? 'positive' :
-               this.getDebtToIncomeRatio(loan, user) <= 0.43 ? 'neutral' : 'negative',
+          this.getDebtToIncomeRatio(loan, user) <= 0.43 ? 'neutral' : 'negative',
         weight: 0.25,
       },
       {
         name: 'Income Stability',
         value: this.getEmploymentDuration(user),
         impact: this.getEmploymentDuration(user) >= 24 ? 'positive' :
-               this.getEmploymentDuration(user) >= 12 ? 'neutral' : 'negative',
+          this.getEmploymentDuration(user) >= 12 ? 'neutral' : 'negative',
         weight: 0.2,
       },
       {
         name: 'Payment History',
         value: this.getPaymentHistoryScore(user),
         impact: this.getPaymentHistoryScore(user) >= 80 ? 'positive' :
-               this.getPaymentHistoryScore(user) >= 60 ? 'neutral' : 'negative',
+          this.getPaymentHistoryScore(user) >= 60 ? 'neutral' : 'negative',
         weight: 0.25,
       },
     ];
@@ -356,7 +356,7 @@ export class ApprovalWorkflowService {
    */
   private calculateOverallScore(
     ruleResults: Array<{ rule: ApprovalRule; passed: boolean; weight: number }>,
-    creditCheck: CreditCheckResult
+    creditCheck: CreditCheckResult,
   ): number {
     // Base score from credit check
     let score = creditCheck.score;
@@ -387,7 +387,7 @@ export class ApprovalWorkflowService {
   private makeDecision(
     score: number,
     creditCheck: CreditCheckResult,
-    options: { skipManualReview?: boolean }
+    options: { skipManualReview?: boolean },
   ): {
     decision: 'approved' | 'rejected' | 'manual_review';
     confidence: number;
@@ -454,7 +454,7 @@ export class ApprovalWorkflowService {
     loan: ILoan,
     user: IUser,
     creditCheck: CreditCheckResult,
-    score: number
+    score: number,
   ): {
     terms?: {
       interestRate?: number;
@@ -532,18 +532,18 @@ export class ApprovalWorkflowService {
       let type: 'info' | 'success' | 'warning' | 'error';
 
       switch (result.decision) {
-        case 'approved':
-          message = `Your loan application for $${Number(loan.principal).toLocaleString()} has been approved!`;
-          type = 'success';
-          break;
-        case 'rejected':
-          message = `Your loan application has been rejected. Please review the feedback and consider reapplying.`;
-          type = 'error';
-          break;
-        case 'manual_review':
-          message = `Your loan application is under review. We'll contact you within 2-3 business days.`;
-          type = 'info';
-          break;
+      case 'approved':
+        message = `Your loan application for $${Number(loan.principal).toLocaleString()} has been approved!`;
+        type = 'success';
+        break;
+      case 'rejected':
+        message = 'Your loan application has been rejected. Please review the feedback and consider reapplying.';
+        type = 'error';
+        break;
+      case 'manual_review':
+        message = 'Your loan application is under review. We\'ll contact you within 2-3 business days.';
+        type = 'info';
+        break;
       }
 
       await getNotificationService().sendNotification({

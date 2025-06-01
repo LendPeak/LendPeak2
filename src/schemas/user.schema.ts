@@ -142,7 +142,9 @@ UserSchema.virtual('fullName').get(function() {
 // Pre-save middleware to hash password
 UserSchema.pre('save', async function(next) {
   // Only hash password if it's modified
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password')) {
+    return next();
+  }
   
   try {
     const salt = await bcrypt.genSalt(12);
@@ -166,7 +168,7 @@ UserSchema.pre('save', function(next) {
     const allPermissions = new Set<string>();
     
     this.roles.forEach(role => {
-      const rolePermissions = ROLE_PERMISSIONS[role as UserRole] || [];
+      const rolePermissions = ROLE_PERMISSIONS[role ] || [];
       rolePermissions.forEach(permission => allPermissions.add(permission));
     });
     

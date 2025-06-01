@@ -11,10 +11,9 @@ import {
   ScheduledPayment, 
   PaymentCalculationResult 
 } from '../types/payment-types';
-import { LoanTerms } from '../types/loan-types';
+import { LoanTerms } from '../types'; // Corrected import
 import { roundMoney } from '../utils/decimal-utils';
-// TODO: Import when amortization calculator is available
-// import { calculateAmortizationSchedule } from './amortization-calculator';
+import { generateAmortizationSchedule } from './amortization-calculator';
 import { addMonths } from '../utils/date-utils';
 
 /**
@@ -202,7 +201,7 @@ export function applyExtendContractStrategy(
   const targetPayment = regularPayment.times(1 + config.targetPaymentIncrease);
   
   // Simple calculation: how many months at target payment to pay off balance
-  const monthlyRate = terms.annualRate.div(12).div(100);
+  const monthlyRate = terms.annualInterestRate.div(12).div(100); // Changed annualRate to annualInterestRate
   
   while (testBalance.gt(0) && extensionMonths < config.maxExtensionMonths) {
     extensionMonths++;
@@ -230,26 +229,30 @@ export function applyExtendContractStrategy(
   }
   
   // Create new terms with extended loan period
-  const newTermMonths = terms.termMonths + extensionMonths;
-  const newMaturityDate = addMonths(terms.startDate, newTermMonths);
-  
-  // TODO: Recalculate the entire schedule with new term when amortization calculator is available
-  const newTerms: LoanTerms = {
-    ...terms,
-    termMonths: newTermMonths,
-    maturityDate: newMaturityDate
+  const newOverallTermMonths = terms.termMonths + extensionMonths;
+
+  // Define new loan terms for a full recalculation
+  const newTermsForRecalc: LoanTerms = {
+    ...terms, // Spread original terms to retain all other settings
+    termMonths: newOverallTermMonths,
+    balloonPayment: undefined, // Balloon is being amortized out
+    balloonPaymentDate: undefined,
+    // firstPaymentDate should be the original one, or adjusted if necessary
+    // For simplicity, we assume generateAmortizationSchedule handles it based on startDate and term.
   };
   
-  // For now, return success with the new terms
-  // In production, we would recalculate the full schedule
+  // Recalculate the entire schedule with the new extended term
+  const modifiedSchedule = generateAmortizationSchedule(newTermsForRecalc);
+
   return {
     strategy: 'EXTEND_CONTRACT',
     success: true,
-    newTerms: {
-      termMonths: newTermMonths,
-      maturityDate: newMaturityDate
+    newTerms: { // Summary of changes
+      termMonths: newOverallTermMonths,
+      maturityDate: modifiedSchedule.lastPaymentDate
     },
-    message: `Loan term extended by ${extensionMonths} months to eliminate balloon payment`,
+    modifiedSchedule: modifiedSchedule, // The newly generated schedule
+    message: `Loan term extended by ${extensionMonths} months to eliminate balloon payment. Full new schedule generated.`,
     warnings: config.requiresApproval 
       ? ['This extension requires underwriting approval'] 
       : undefined

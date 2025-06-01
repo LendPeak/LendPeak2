@@ -141,7 +141,7 @@ router.post('/upload',
     res.status(201).json({
       data: document,
     });
-  })
+  }),
 );
 
 /**
@@ -205,7 +205,7 @@ router.get('/:documentId',
     res.json({
       data: document,
     });
-  })
+  }),
 );
 
 /**
@@ -278,7 +278,7 @@ router.get('/:documentId/download',
         expiresIn: 3600,
       },
     });
-  })
+  }),
 );
 
 /**
@@ -311,7 +311,7 @@ router.get('/:documentId/thumbnail',
         expiresIn: 3600,
       },
     });
-  })
+  }),
 );
 
 /**
@@ -356,7 +356,7 @@ router.delete('/:documentId',
     res.json({
       message: 'Document deleted successfully',
     });
-  })
+  }),
 );
 
 /**
@@ -383,7 +383,7 @@ router.put('/:documentId/verify',
     // Verify document integrity
     const isValid = await documentService.verifyDocumentIntegrity(
       document.s3Key,
-      document.checksum
+      document.checksum,
     );
 
     if (!isValid) {
@@ -400,13 +400,13 @@ router.put('/:documentId/verify',
     const verifiedDocument = await documentRepository.verify(
       documentId,
       req.user?.id || 'unknown',
-      notes
+      notes,
     );
 
     res.json({
       data: verifiedDocument,
     });
-  })
+  }),
 );
 
 /**
@@ -467,7 +467,7 @@ router.post('/:documentId/share',
     res.json({
       data: sharedDocument,
     });
-  })
+  }),
 );
 
 /**
@@ -535,7 +535,7 @@ router.get('/entity/:entityType/:entityId',
     res.json({
       data: documents,
     });
-  })
+  }),
 );
 
 /**
@@ -587,7 +587,7 @@ router.get('/search',
     const { documents, total } = await documentRepository.search(
       searchCriteria,
       query.limit,
-      query.offset
+      query.offset,
     );
 
     res.json({
@@ -598,7 +598,7 @@ router.get('/search',
         offset: query.offset,
       },
     });
-  })
+  }),
 );
 
 /**
@@ -612,13 +612,13 @@ router.get('/statistics',
 
     const stats = await documentRepository.getStatistics(
       entityType as 'loan' | 'user' | 'application' | undefined,
-      entityId as string | undefined
+      entityId as string | undefined,
     );
 
     res.json({
       data: stats,
     });
-  })
+  }),
 );
 
 /**
@@ -631,13 +631,13 @@ router.get('/verification-queue',
     const { limit = 50 } = req.query;
 
     const documents = await documentRepository.getDocumentsRequiringVerification(
-      Number(limit)
+      Number(limit),
     );
 
     res.json({
       data: documents,
     });
-  })
+  }),
 );
 
 /**
@@ -677,7 +677,7 @@ router.post('/presigned-upload',
     const presignedPost = await documentService.generatePresignedPost(
       s3Key,
       body.mimeType,
-      documentService.getMaxFileSize(body.category as DocumentCategory)
+      documentService.getMaxFileSize(body.category as DocumentCategory),
     );
 
     res.json({
@@ -687,7 +687,7 @@ router.post('/presigned-upload',
         fields: presignedPost.fields,
       },
     });
-  })
+  }),
 );
 
 // Helper function

@@ -21,6 +21,7 @@ module.exports = {
     },
   },
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@utils/(.*)$': '<rootDir>/src/utils/$1', // Specific for @utils
+    '^@/(.*)$': '<rootDir>/src/$1', // General for @/
   },
 };

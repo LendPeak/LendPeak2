@@ -135,7 +135,7 @@ router.get('/reports',
       data: report,
       requestedBy: req.user?.id,
     });
-  })
+  }),
 );
 
 /**
@@ -160,7 +160,7 @@ router.get('/user/:userId',
       requestedBy: req.user?.id,
       timestamp: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -183,7 +183,7 @@ router.get('/alerts/:userId',
       },
       message: 'Alert history feature coming soon',
     });
-  })
+  }),
 );
 
 /**
@@ -225,7 +225,7 @@ router.post('/test-limits',
       testedBy: req.user?.id,
       timestamp: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -254,7 +254,7 @@ router.get('/real-time',
       timestamp: new Date(),
       refreshInterval: 30000, // 30 seconds
     });
-  })
+  }),
 );
 
 /**
@@ -280,7 +280,7 @@ router.put('/quota/:userId',
         updatedAt: new Date(),
       },
     });
-  })
+  }),
 );
 
 export { router as usageAnalyticsRouter };
