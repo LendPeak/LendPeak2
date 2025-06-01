@@ -11,7 +11,7 @@ import {
   refreshTokenSchema, 
   forgotPasswordSchema, 
   resetPasswordSchema,
-  changePasswordSchema 
+  changePasswordSchema,
 } from '../validators/auth.validator';
 import { UserRole, UserStatus } from '../../models/user.model';
 import { logger } from '../../utils/logger';
@@ -66,7 +66,7 @@ router.post('/register', validateRequest({ body: registerSchema }), asyncHandler
 
   // Check if user already exists
   const existingUser = await UserModel.findOne({
-    $or: [{ email }, { username }]
+    $or: [{ email }, { username }],
   });
 
   if (existingUser) {

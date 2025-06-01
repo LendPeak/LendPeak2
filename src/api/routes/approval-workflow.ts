@@ -61,21 +61,21 @@ router.post('/process/:loanId',
     const result = await approvalWorkflowService.processLoanApplication(
       loan,
       user,
-      { skipManualReview }
+      { skipManualReview },
     );
 
     // Update loan status based on decision
     let newStatus: string;
     switch (result.decision) {
-      case 'approved':
-        newStatus = 'approved';
-        break;
-      case 'rejected':
-        newStatus = 'rejected';
-        break;
-      case 'manual_review':
-        newStatus = 'under_review';
-        break;
+    case 'approved':
+      newStatus = 'approved';
+      break;
+    case 'rejected':
+      newStatus = 'rejected';
+      break;
+    case 'manual_review':
+      newStatus = 'under_review';
+      break;
     }
 
     await loanRepository.updateById(loanId, { 
@@ -99,7 +99,7 @@ router.post('/process/:loanId',
         reviewedAt: new Date(),
       },
     });
-  })
+  }),
 );
 
 /**
@@ -141,21 +141,21 @@ router.post('/batch-process',
         const result = await approvalWorkflowService.processLoanApplication(
           loan,
           user,
-          { skipManualReview }
+          { skipManualReview },
         );
 
         // Update loan status
         let newStatus: string;
         switch (result.decision) {
-          case 'approved':
-            newStatus = 'approved';
-            break;
-          case 'rejected':
-            newStatus = 'rejected';
-            break;
-          case 'manual_review':
-            newStatus = 'under_review';
-            break;
+        case 'approved':
+          newStatus = 'approved';
+          break;
+        case 'rejected':
+          newStatus = 'rejected';
+          break;
+        case 'manual_review':
+          newStatus = 'under_review';
+          break;
         }
 
         await loanRepository.updateById(loanId, { 
@@ -186,7 +186,7 @@ router.post('/batch-process',
         processedAt: new Date(),
       },
     });
-  })
+  }),
 );
 
 /**
@@ -201,7 +201,7 @@ router.get('/config',
     res.json({
       data: config,
     });
-  })
+  }),
 );
 
 /**
@@ -243,7 +243,7 @@ router.put('/config',
       updatedBy: req.user?.id,
       updatedAt: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -264,7 +264,7 @@ router.get('/rules',
         weight: rule.weight,
       })),
     });
-  })
+  }),
 );
 
 /**
@@ -324,7 +324,7 @@ router.post('/rules',
       addedBy: req.user?.id,
       addedAt: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -359,7 +359,7 @@ router.delete('/rules/:ruleId',
       removedBy: req.user?.id,
       removedAt: new Date(),
     });
-  })
+  }),
 );
 
 /**
@@ -414,7 +414,7 @@ router.post('/simulate',
     const result = await approvalWorkflowService.processLoanApplication(
       mockLoan,
       mockUser,
-      { skipManualReview }
+      { skipManualReview },
     );
 
     res.json({
@@ -431,7 +431,7 @@ router.post('/simulate',
         simulatedAt: new Date(),
       },
     });
-  })
+  }),
 );
 
 /**
@@ -474,7 +474,7 @@ router.get('/statistics',
         generatedAt: new Date(),
       },
     });
-  })
+  }),
 );
 
 export { router as approvalWorkflowRouter };

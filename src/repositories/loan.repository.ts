@@ -465,7 +465,7 @@ export class LoanRepository {
   async updateById(
     loanId: string,
     updateData: Partial<ILoan>,
-    session?: ClientSession
+    session?: ClientSession,
   ): Promise<ILoan> {
     const loan = await this.findById(loanId, session);
     if (!loan) {

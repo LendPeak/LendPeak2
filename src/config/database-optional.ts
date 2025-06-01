@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { config } from './index';
 import { logger } from '../utils/logger';
 
-export async function connectDatabase(required: boolean = true): Promise<boolean> {
+export async function connectDatabase(required = true): Promise<boolean> {
   try {
     // In development, make database optional
     if (config.isDevelopment && !required) {

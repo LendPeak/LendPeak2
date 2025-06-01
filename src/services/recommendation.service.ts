@@ -70,7 +70,7 @@ export class RecommendationService {
 
   constructor(
     private loanRepository: LoanRepository,
-    private userRepository: UserRepository
+    private userRepository: UserRepository,
   ) {}
 
   /**
@@ -83,13 +83,13 @@ export class RecommendationService {
       // Calculate base parameters
       const debtToIncomeRatio = this.calculateDebtToIncomeRatio(
         profile.annualIncome,
-        profile.existingDebt
+        profile.existingDebt,
       );
 
       const maxLoanAmount = this.calculateMaxLoanAmount(
         profile.creditScore,
         profile.annualIncome,
-        debtToIncomeRatio
+        debtToIncomeRatio,
       );
 
       // Generate recommendations based on credit tiers
@@ -107,7 +107,7 @@ export class RecommendationService {
               'Stable employment history',
               'Low debt-to-income ratio',
             ],
-          })
+          }),
         );
 
         recommendations.push(
@@ -122,7 +122,7 @@ export class RecommendationService {
               'Only pay interest on what you use',
               'Great for ongoing projects',
             ],
-          })
+          }),
         );
       } else if (profile.creditScore >= 670) {
         // Good credit
@@ -138,7 +138,7 @@ export class RecommendationService {
               'Manageable monthly payments',
               'Build credit with on-time payments',
             ],
-          })
+          }),
         );
       } else {
         // Fair credit
@@ -154,7 +154,7 @@ export class RecommendationService {
               'Lower amount for easier approval',
               'Opportunity to refinance with better credit',
             ],
-          })
+          }),
         );
       }
 
@@ -171,7 +171,7 @@ export class RecommendationService {
             'Higher approval chances',
             'Good for debt consolidation',
           ],
-        })
+        }),
       );
 
       // Sort by score and return top 3
@@ -227,7 +227,7 @@ export class RecommendationService {
       // Further limit based on disposable income
       const maxMonthlyPayment = Math.min(
         availableForNewDebt,
-        disposableIncome * 0.5 // Don't use more than 50% of disposable income
+        disposableIncome * 0.5, // Don't use more than 50% of disposable income
       );
 
       // Calculate max loan amount based on payment
@@ -235,7 +235,7 @@ export class RecommendationService {
       const maxLoanAmount = this.calculateLoanAmountFromPayment(
         new Big(maxMonthlyPayment),
         interestRate,
-        60 // 5-year term
+        60, // 5-year term
       );
 
       // Recommended amount is more conservative
@@ -407,7 +407,7 @@ export class RecommendationService {
         const newPayment = this.calculateMonthlyPayment(
           new Big(balance),
           new Big(newRate),
-          existingLoan.remainingTerm
+          existingLoan.remainingTerm,
         );
 
         const monthlySavings = currentPayment - Number(newPayment);
@@ -435,7 +435,7 @@ export class RecommendationService {
       const extendedPayment = this.calculateMonthlyPayment(
         new Big(balance),
         new Big(extendedRate),
-        extendedTerm
+        extendedTerm,
       );
 
       options.push({
@@ -572,7 +572,7 @@ export class RecommendationService {
   private calculateMaxLoanAmount(
     creditScore: number,
     annualIncome: number,
-    debtToIncomeRatio: number
+    debtToIncomeRatio: number,
   ): Big {
     let multiplier = 0.3; // Conservative default
 
@@ -586,20 +586,28 @@ export class RecommendationService {
   }
 
   private getBaseRate(creditScore: number): Big {
-    if (creditScore >= 740) return new Big('0.035');
-    if (creditScore >= 670) return new Big('0.055');
-    if (creditScore >= 620) return new Big('0.085');
+    if (creditScore >= 740) {
+      return new Big('0.035');
+    }
+    if (creditScore >= 670) {
+      return new Big('0.055');
+    }
+    if (creditScore >= 620) {
+      return new Big('0.085');
+    }
     return new Big('0.12');
   }
 
   private calculateMonthlyPayment(principal: Big, rate: Big, termMonths: number): Big {
-    if (termMonths === 0) return new Big(0); // Revolving credit
+    if (termMonths === 0) {
+      return new Big(0);
+    } // Revolving credit
 
     const monthlyRate = rate.div(12);
     const factor = monthlyRate.times(
-      monthlyRate.plus(1).pow(termMonths)
+      monthlyRate.plus(1).pow(termMonths),
     ).div(
-      monthlyRate.plus(1).pow(termMonths).minus(1)
+      monthlyRate.plus(1).pow(termMonths).minus(1),
     );
 
     return principal.times(factor);
@@ -608,7 +616,7 @@ export class RecommendationService {
   private calculateLoanAmountFromPayment(payment: Big, rate: Big, termMonths: number): Big {
     const monthlyRate = rate.div(12);
     const factor = monthlyRate.plus(1).pow(termMonths).minus(1).div(
-      monthlyRate.times(monthlyRate.plus(1).pow(termMonths))
+      monthlyRate.times(monthlyRate.plus(1).pow(termMonths)),
     );
 
     return payment.times(factor);
@@ -634,8 +642,11 @@ export class RecommendationService {
     
     // Appropriate amount for income
     const loanToIncome = Number(params.amount) / params.profile.annualIncome;
-    if (loanToIncome < 0.3) score += 20;
-    else if (loanToIncome > 0.5) score -= 20;
+    if (loanToIncome < 0.3) {
+      score += 20;
+    } else if (loanToIncome > 0.5) {
+      score -= 20;
+    }
 
     // Model confidence if available
     const modelConfidence = this.model?.trained ? 0.85 : undefined;
@@ -657,5 +668,5 @@ export class RecommendationService {
 // Export singleton instance
 export const recommendationService = new RecommendationService(
   new LoanRepository(),
-  new UserRepository()
+  new UserRepository(),
 );

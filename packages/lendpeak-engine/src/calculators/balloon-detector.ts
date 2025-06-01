@@ -1,8 +1,10 @@
 import Big from 'big.js';
-import { 
-  BalloonDetectionConfig, 
-  BalloonDetectionResult, 
-  SystemBalloonDefaults 
+import Big from 'big.js';
+import dayjs, { Dayjs } from 'dayjs'; // Import Dayjs
+import {
+  BalloonDetectionConfig,
+  BalloonDetectionResult,
+  SystemBalloonDefaults
 } from '../types/balloon-payment-types';
 import { AmortizationSchedule, ScheduledPayment } from '../types/payment-types';
 import { roundMoney } from '../utils/decimal-utils';
@@ -213,11 +215,11 @@ export function validateBalloonCompliance(
  * Calculates notification schedule for a balloon payment
  */
 export function calculateBalloonNotificationSchedule(
-  balloonDate: Date,
+  balloonDate: Dayjs, // Changed to Dayjs
   notificationDays: number[],
   state?: string,
   systemDefaults: SystemBalloonDefaults = DEFAULT_BALLOON_CONFIG
-): Date[] {
+): Dayjs[] { // Changed to Dayjs[]
   // Get state-specific minimum notification days
   const stateRules = state ? systemDefaults.stateOverrides[state] : undefined;
   const minNotificationDays = stateRules?.minNotificationDays || 0;
@@ -231,10 +233,9 @@ export function calculateBalloonNotificationSchedule(
   // Calculate notification dates
   return effectiveDays
     .filter(days => days > 0)
-    .sort((a, b) => b - a) // Sort descending (earliest notification first)
+    .sort((a, b) => b - a) // Sort descending to get earliest notification date first when mapped
     .map(days => {
-      const notificationDate = new Date(balloonDate);
-      notificationDate.setDate(notificationDate.getDate() - days);
-      return notificationDate;
-    });
+      return balloonDate.subtract(days, 'day'); // Use Dayjs subtract
+    })
+    .sort((a, b) => a.valueOf() - b.valueOf()); // Sort ascending (earliest date first) for the final output
 }

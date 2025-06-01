@@ -11,7 +11,7 @@ export const createUserSchema = Joi.object({
   lastName: Joi.string().min(2).max(50).required(),
   phoneNumber: Joi.string().pattern(/^\+?[\d\s-()]+$/).optional(),
   roles: Joi.array().items(
-    Joi.string().valid(...Object.values(UserRole))
+    Joi.string().valid(...Object.values(UserRole)),
   ).default([UserRole.VIEWER]),
   status: Joi.string().valid(...Object.values(UserStatus)).default(UserStatus.ACTIVE),
   departments: Joi.array().items(Joi.string()).optional(),
@@ -34,7 +34,7 @@ export const searchUserSchema = Joi.object({
   username: Joi.string().optional(),
   roles: Joi.alternatives().try(
     Joi.string().valid(...Object.values(UserRole)),
-    Joi.array().items(Joi.string().valid(...Object.values(UserRole)))
+    Joi.array().items(Joi.string().valid(...Object.values(UserRole))),
   ).optional(),
   status: Joi.string().valid(...Object.values(UserStatus)).optional(),
   department: Joi.string().optional(),

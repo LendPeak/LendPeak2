@@ -181,7 +181,9 @@ export class NotificationService {
   async notifyPaymentDue(loan: ILoan, user: IUser, daysUntilDue: number): Promise<void> {
     try {
       const nextPayment = (loan as any).schedule?.find((p: any) => p.status === 'pending');
-      if (!nextPayment) return;
+      if (!nextPayment) {
+        return;
+      }
 
       await this.sendNotification({
         userId: user._id.toString(),
@@ -221,9 +223,11 @@ export class NotificationService {
   async notifyPaymentOverdue(loan: ILoan, user: IUser, daysOverdue: number): Promise<void> {
     try {
       const overduePayment = (loan as any).schedule?.find((p: any) => 
-        p.status === 'pending' && new Date(p.dueDate) < new Date()
+        p.status === 'pending' && new Date(p.dueDate) < new Date(),
       );
-      if (!overduePayment) return;
+      if (!overduePayment) {
+        return;
+      }
 
       await this.sendNotification({
         userId: user._id.toString(),
@@ -388,7 +392,7 @@ export class NotificationService {
         this.sendNotification({
           ...notification,
           userId,
-        })
+        }),
       );
 
       await Promise.allSettled(promises);

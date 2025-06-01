@@ -87,7 +87,7 @@ router.get('/health/detailed', asyncHandler(async (req, res) => {
 
   // Overall health
   const unhealthyServices = Object.values(health.checks).filter(
-    check => check.status !== 'healthy' && check.status !== 'disconnected'
+    check => check.status !== 'healthy' && check.status !== 'disconnected',
   );
 
   if (unhealthyServices.length > 0 && !config.isDevelopment) {

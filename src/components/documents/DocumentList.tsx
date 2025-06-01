@@ -81,11 +81,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     queryKey: ['documents', entityType, entityId, selectedCategory, showVerifiedOnly],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (selectedCategory) params.append('category', selectedCategory);
-      if (showVerifiedOnly) params.append('verified', 'true');
+      if (selectedCategory) {
+        params.append('category', selectedCategory);
+      }
+      if (showVerifiedOnly) {
+        params.append('verified', 'true');
+      }
 
       const response = await apiClient.get(
-        `/documents/entity/${entityType}/${entityId}?${params}`
+        `/documents/entity/${entityType}/${entityId}?${params}`,
       );
       return response.data.data;
     },

@@ -4,7 +4,7 @@ import { LoanStatus, LoanType } from '../../models/loan.model';
 const LoanCalendar = {
   ACTUAL_365: 'ACTUAL/365',
   ACTUAL_360: 'ACTUAL/360',
-  THIRTY_360: '30/360'
+  THIRTY_360: '30/360',
 };
 
 // Custom validator for Big.js compatible numbers
@@ -40,12 +40,12 @@ export const createLoanSchema = Joi.object({
   escrowBalance: bigNumber().when('hasEscrow', {
     is: true,
     then: Joi.required(),
-    otherwise: Joi.optional()
+    otherwise: Joi.optional(),
   }),
   escrowPayment: bigNumber().when('hasEscrow', {
     is: true,
     then: Joi.required(),
-    otherwise: Joi.optional()
+    otherwise: Joi.optional(),
   }),
   propertyTaxAmount: bigNumber().optional(),
   insuranceAmount: bigNumber().optional(),
@@ -68,7 +68,7 @@ export const searchLoanSchema = Joi.object({
   borrowerId: Joi.string().optional(),
   status: Joi.alternatives().try(
     Joi.string().valid(...Object.values(LoanStatus)),
-    Joi.array().items(Joi.string().valid(...Object.values(LoanStatus)))
+    Joi.array().items(Joi.string().valid(...Object.values(LoanStatus))),
   ).optional(),
   loanType: Joi.string().valid(...Object.values(LoanType)).optional(),
   minBalance: bigNumber().optional(),

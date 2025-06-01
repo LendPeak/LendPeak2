@@ -5,7 +5,7 @@ import { ILoan, LoanStatus, LoanType } from '../models/loan.model';
 const LoanCalendar = {
   ACTUAL_365: 'ACTUAL/365',
   ACTUAL_360: 'ACTUAL/360',
-  THIRTY_360: '30/360'
+  THIRTY_360: '30/360',
 };
 import { bigDecimalType, bigDecimalWithDefault } from '../utils/mongoose-types';
 

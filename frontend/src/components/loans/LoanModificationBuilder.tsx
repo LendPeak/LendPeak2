@@ -194,13 +194,13 @@ export const LoanModificationBuilder = ({ loan, isOpen, onClose, onSuccess }: Lo
       // Create calculation objects for compatibility
       const currentCalc = {
         monthlyPayment: currentPayment.monthlyPayment.toNumber(),
-        totalInterest: 0, // TODO: Calculate if needed
+        totalInterest: currentPayment.totalInterest.toNumber(), // Updated
         totalPayment: currentPayment.monthlyPayment.toNumber() * loan.loanParameters.termMonths,
       };
       
       const projectedCalc = {
         monthlyPayment: projectedPayment.monthlyPayment.toNumber(),
-        totalInterest: 0, // TODO: Calculate if needed  
+        totalInterest: projectedPayment.totalInterest.toNumber(), // Updated
         totalPayment: projectedPayment.monthlyPayment.toNumber() * projectedParams.termMonths,
       };
 

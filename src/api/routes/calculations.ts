@@ -197,7 +197,9 @@ router.post('/waterfall/apply', (req, res) => {
     
     // Apply payments according to waterfall
     for (const category of order) {
-      if (remainingPayment.lte(0)) break;
+      if (remainingPayment.lte(0)) {
+        break;
+      }
       
       const outstandingInCategory = outstanding[category as keyof typeof outstanding];
       const allocationAmount = remainingPayment.gt(outstandingInCategory) 

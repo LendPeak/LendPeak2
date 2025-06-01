@@ -120,7 +120,7 @@ export class AuthService {
       
       // Find the refresh token
       const tokenIndex = user.refreshTokens.findIndex(
-        rt => rt.token === refreshToken && !rt.isRevoked && rt.expiresAt > new Date()
+        rt => rt.token === refreshToken && !rt.isRevoked && rt.expiresAt > new Date(),
       );
       
       if (tokenIndex === -1) {
@@ -223,7 +223,7 @@ export class AuthService {
     const refreshToken = jwt.sign(
       { id: user.id },
       config.auth.jwtSecret,
-      { expiresIn: this.refreshTokenExpiry }
+      { expiresIn: this.refreshTokenExpiry },
     );
     
     return {
@@ -243,7 +243,7 @@ export class AuthService {
     metadata: Record<string, any>,
     ipAddress: string,
     userAgent: string,
-    errorMessage?: string
+    errorMessage?: string,
   ): Promise<void> {
     try {
       await UserActivityModel.create({

@@ -120,7 +120,7 @@ export class UserRepository {
     const user = await UserModel.findByIdAndUpdate(
       id,
       { ...updates, updatedAt: new Date() },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (user) {
@@ -179,7 +179,7 @@ export class UserRepository {
       await authService.AuthService.prototype.revokeAllTokens.call(
         new authService.AuthService(),
         userId,
-        reason || 'Account suspended'
+        reason || 'Account suspended',
       );
     }
 
@@ -292,7 +292,7 @@ export class UserRepository {
       await authService.AuthService.prototype.revokeAllTokens.call(
         new authService.AuthService(),
         id,
-        'Account deactivated'
+        'Account deactivated',
       );
 
       logger.info('User soft deleted', { userId: id, deletedBy });

@@ -89,7 +89,7 @@ export interface CustomReport {
 export class AnalyticsService {
   constructor(
     private loanRepository: LoanRepository,
-    private userRepository: UserRepository
+    private userRepository: UserRepository,
   ) {}
 
   /**
@@ -105,17 +105,17 @@ export class AnalyticsService {
       const defaultedLoans = loans.filter(l => l.status === 'DEFAULT');
 
       const totalDisbursed = loans.reduce((sum, loan) => 
-        sum.plus(loan.principal), new Big(0)
+        sum.plus(loan.principal), new Big(0),
       );
 
       const outstandingBalance = activeLoans.reduce((sum, loan) => 
-        sum.plus(loan.currentBalance), new Big(0)
+        sum.plus(loan.currentBalance), new Big(0),
       );
 
       const averageInterestRate = loans.length > 0
         ? loans.reduce((sum, loan) => sum.plus(loan.interestRate), new Big(0))
-            .div(loans.length)
-            .times(100)
+          .div(loans.length)
+          .times(100)
         : new Big(0);
 
       const defaultRate = loans.length > 0
@@ -151,15 +151,15 @@ export class AnalyticsService {
       }, {} as Record<string, number>);
 
       const totalValue = loans.reduce((sum, loan) => 
-        sum.plus(loan.principal), new Big(0)
+        sum.plus(loan.principal), new Big(0),
       );
 
       const atRiskLoans = loans.filter(l => 
-        ['DELINQUENT', 'DEFAULT', 'FORBEARANCE'].includes(l.status)
+        ['DELINQUENT', 'DEFAULT', 'FORBEARANCE'].includes(l.status),
       );
 
       const atRiskValue = atRiskLoans.reduce((sum, loan) => 
-        sum.plus(loan.currentBalance), new Big(0)
+        sum.plus(loan.currentBalance), new Big(0),
       );
 
       const atRiskPercentage = totalValue.gt(0)
@@ -224,7 +224,7 @@ export class AnalyticsService {
       const endOfYear = new Date(`${year}-12-31`);
 
       const users = await this.userRepository.findAll({
-        createdAt: { $gte: startOfYear, $lte: endOfYear }
+        createdAt: { $gte: startOfYear, $lte: endOfYear },
       });
 
       const monthlyGrowth = users.reduce((acc, user) => {
@@ -283,7 +283,7 @@ export class AnalyticsService {
       loans.forEach(loan => {
         if (loan.schedule && loan.schedule.length > 0) {
           const duePayments = loan.schedule.filter(p => 
-            new Date(p.dueDate) <= new Date()
+            new Date(p.dueDate) <= new Date(),
           );
           totalPaymentsDue += duePayments.length;
           
@@ -294,7 +294,7 @@ export class AnalyticsService {
           if (loan.disbursedAt && loan.firstPaymentDate) {
             const daysDiff = Math.floor(
               (loan.firstPaymentDate.getTime() - loan.disbursedAt.getTime()) / 
-              (1000 * 60 * 60 * 24)
+              (1000 * 60 * 60 * 24),
             );
             totalDaysToFirstPayment += daysDiff;
             loansWithPayments++;
@@ -311,7 +311,7 @@ export class AnalyticsService {
         : 0;
 
       const delinquentLoans = loans.filter(l => 
-        ['DELINQUENT', 'DEFAULT'].includes(l.status)
+        ['DELINQUENT', 'DEFAULT'].includes(l.status),
       );
 
       const delinquencyRate = loans.length > 0
@@ -474,16 +474,16 @@ export class AnalyticsService {
       if (filters.includePayments && filters.startDate && filters.endDate) {
         payments = await this.loanRepository.getPaymentsInDateRange(
           filters.startDate,
-          filters.endDate
+          filters.endDate,
         );
       }
 
       const totalDisbursed = loans.reduce((sum, loan) => 
-        sum.plus(loan.principal), new Big(0)
+        sum.plus(loan.principal), new Big(0),
       );
 
       const totalCollected = payments.reduce((sum, payment) => 
-        sum.plus(payment.amount || 0), new Big(0)
+        sum.plus(payment.amount || 0), new Big(0),
       );
 
       return {
@@ -498,7 +498,7 @@ export class AnalyticsService {
           status: loan.status,
           principal: loan.principal.toFixed(2),
           currentBalance: loan.currentBalance.toFixed(2),
-          interestRate: loan.interestRate.times(100).toFixed(2) + '%',
+          interestRate: `${loan.interestRate.times(100).toFixed(2)  }%`,
           disbursedAt: loan.disbursedAt,
         })),
         payments: filters.includePayments ? payments : undefined,
@@ -515,7 +515,7 @@ export class AnalyticsService {
    */
   async streamRealTimeMetrics(
     callback: (data: any) => void,
-    intervalMs: number = 5000
+    intervalMs = 5000,
   ): Promise<() => void> {
     const wsService = getWebSocketService();
     
@@ -557,25 +557,25 @@ export class AnalyticsService {
   async exportAnalytics(format: 'csv' | 'json' | 'pdf', data: any): Promise<Buffer> {
     try {
       switch (format) {
-        case 'json':
-          return Buffer.from(JSON.stringify(data, null, 2));
+      case 'json':
+        return Buffer.from(JSON.stringify(data, null, 2));
         
-        case 'csv':
-          // Simple CSV implementation
-          const headers = Object.keys(data.summary || data);
-          const values = Object.values(data.summary || data);
-          const csv = [
-            headers.join(','),
-            values.join(','),
-          ].join('\n');
-          return Buffer.from(csv);
+      case 'csv':
+        // Simple CSV implementation
+        const headers = Object.keys(data.summary || data);
+        const values = Object.values(data.summary || data);
+        const csv = [
+          headers.join(','),
+          values.join(','),
+        ].join('\n');
+        return Buffer.from(csv);
         
-        case 'pdf':
-          // PDF generation would require a library like pdfkit
-          throw new Error('PDF export not implemented');
+      case 'pdf':
+        // PDF generation would require a library like pdfkit
+        throw new Error('PDF export not implemented');
         
-        default:
-          throw new Error(`Unsupported format: ${format}`);
+      default:
+        throw new Error(`Unsupported format: ${format}`);
       }
     } catch (error) {
       logger.error('Error exporting analytics:', error);
@@ -587,5 +587,5 @@ export class AnalyticsService {
 // Export singleton instance
 export const analyticsService = new AnalyticsService(
   new LoanRepository(),
-  new UserRepository()
+  new UserRepository(),
 );

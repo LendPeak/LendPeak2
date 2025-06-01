@@ -4,7 +4,7 @@ import Big from 'big.js';
 export const LoanCalendar = {
   ACTUAL_365: 'ACTUAL/365',
   ACTUAL_360: 'ACTUAL/360',
-  THIRTY_360: '30/360'
+  THIRTY_360: '30/360',
 } as const;
 
 export enum LoanStatus {

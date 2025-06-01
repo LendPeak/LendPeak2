@@ -7,7 +7,7 @@ import {
   createUserSchema, 
   updateUserSchema, 
   searchUserSchema,
-  assignRoleSchema 
+  assignRoleSchema,
 } from '../validators/user.validator';
 import { UserRole, UserStatus, PERMISSIONS } from '../../models/user.model';
 
@@ -70,7 +70,7 @@ router.get('/',
       })),
       total: users.length,
     });
-  })
+  }),
 );
 
 /**
@@ -90,7 +90,7 @@ router.get('/statistics',
   asyncHandler(async (_req, res) => {
     const statistics = await userRepository.getStatistics();
     res.json({ data: statistics });
-  })
+  }),
 );
 
 /**
@@ -120,7 +120,7 @@ router.get('/:id',
     const userId = req.params.id;
     const isOwnProfile = userId === req.user?.id;
     const isAdmin = req.user?.roles.some(role => 
-      [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(role as UserRole)
+      [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(role as UserRole),
     );
 
     if (!isOwnProfile && !isAdmin) {
@@ -164,7 +164,7 @@ router.get('/:id',
         updatedAt: user.updatedAt,
       },
     });
-  })
+  }),
 );
 
 /**
@@ -203,7 +203,7 @@ router.get('/:id/activity',
       userId: req.params.id,
       count: activity.length,
     });
-  })
+  }),
 );
 
 /**
@@ -261,7 +261,7 @@ router.post('/',
       },
       message: 'User created successfully',
     });
-  })
+  }),
 );
 
 /**
@@ -313,7 +313,7 @@ router.patch('/:id',
       data: user,
       message: 'User updated successfully',
     });
-  })
+  }),
 );
 
 /**
@@ -367,7 +367,7 @@ router.post('/:id/roles',
       data: user,
       message: 'Role assigned successfully',
     });
-  })
+  }),
 );
 
 /**
@@ -412,7 +412,7 @@ router.delete('/:id/roles/:role',
       data: user,
       message: 'Role removed successfully',
     });
-  })
+  }),
 );
 
 /**
@@ -467,7 +467,7 @@ router.patch('/:id/status',
       data: user,
       message: 'User status updated successfully',
     });
-  })
+  }),
 );
 
 /**
@@ -506,7 +506,7 @@ router.delete('/:id',
     res.json({
       message: 'User deleted successfully',
     });
-  })
+  }),
 );
 
 export { router as usersRouter };

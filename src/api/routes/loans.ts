@@ -83,18 +83,32 @@ router.get('/', validateRequest({ query: searchLoanSchema }), asyncHandler(async
     page = 1,
     limit = 20,
     sort = '-createdAt',
-    asOfDate
+    asOfDate,
   } = req.query;
 
   const criteria: any = {};
   
-  if (borrowerId) criteria.borrowerId = borrowerId;
-  if (status) criteria.status = status;
-  if (loanType) criteria.loanType = loanType;
-  if (minBalance) criteria.minBalance = new Big(minBalance as string);
-  if (maxBalance) criteria.maxBalance = new Big(maxBalance as string);
-  if (isDelinquent !== undefined) criteria.isDelinquent = isDelinquent === 'true';
-  if (asOfDate) criteria.asOfDate = new Date(asOfDate as string);
+  if (borrowerId) {
+    criteria.borrowerId = borrowerId;
+  }
+  if (status) {
+    criteria.status = status;
+  }
+  if (loanType) {
+    criteria.loanType = loanType;
+  }
+  if (minBalance) {
+    criteria.minBalance = new Big(minBalance as string);
+  }
+  if (maxBalance) {
+    criteria.maxBalance = new Big(maxBalance as string);
+  }
+  if (isDelinquent !== undefined) {
+    criteria.isDelinquent = isDelinquent === 'true';
+  }
+  if (asOfDate) {
+    criteria.asOfDate = new Date(asOfDate as string);
+  }
 
   const loans = await loanRepository.search(criteria);
   
@@ -110,8 +124,8 @@ router.get('/', validateRequest({ query: searchLoanSchema }), asyncHandler(async
       page: Number(page),
       limit: Number(limit),
       pages: Math.ceil(loans.length / (limit as number)),
-      asOfDate: asOfDate ? new Date(asOfDate as string).toISOString() : null
-    }
+      asOfDate: asOfDate ? new Date(asOfDate as string).toISOString() : null,
+    },
   });
 }));
 
@@ -136,8 +150,8 @@ router.get('/statistics', asyncHandler(async (req, res) => {
       averageLoanAmount: stats.averageLoanAmount.toString(),
       delinquencyRate: stats.delinquencyRate,
       defaultRate: stats.defaultRate,
-      asOfDate: asOfDateObj?.toISOString() || null
-    }
+      asOfDate: asOfDateObj?.toISOString() || null,
+    },
   });
 }));
 
@@ -152,8 +166,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
     res.status(404).json({
       error: {
         code: 'LOAN_NOT_FOUND',
-        message: 'Loan not found'
-      }
+        message: 'Loan not found',
+      },
     });
     return;
   }
@@ -172,7 +186,7 @@ router.get('/:id/audit-trail', asyncHandler(async (req, res) => {
   const auditTrail = await loanRepository.getAuditTrail(
     req.params.id,
     Number(limit),
-    asOfDateObj
+    asOfDateObj,
   );
 
   res.json({ 
@@ -180,8 +194,8 @@ router.get('/:id/audit-trail', asyncHandler(async (req, res) => {
     meta: {
       loanId: req.params.id,
       count: auditTrail.length,
-      asOfDate: asOfDateObj?.toISOString() || null
-    }
+      asOfDate: asOfDateObj?.toISOString() || null,
+    },
   });
 }));
 
@@ -205,7 +219,7 @@ router.post('/', validateRequest({ body: createLoanSchema }), asyncHandler(async
 
   res.status(201).json({
     data: loan,
-    message: 'Loan created successfully'
+    message: 'Loan created successfully',
   });
 }));
 
@@ -220,8 +234,8 @@ router.patch('/:id', validateRequest({ body: updateLoanSchema }), asyncHandler(a
     res.status(404).json({
       error: {
         code: 'LOAN_NOT_FOUND',
-        message: 'Loan not found'
-      }
+        message: 'Loan not found',
+      },
     });
     return;
   }
@@ -241,7 +255,7 @@ router.patch('/:id', validateRequest({ body: updateLoanSchema }), asyncHandler(a
 
   res.json({
     data: loan,
-    message: 'Loan updated successfully'
+    message: 'Loan updated successfully',
   });
 }));
 
@@ -275,7 +289,7 @@ router.post('/:id/payments', asyncHandler(async (req, res) => {
         feesPaid: fees,
         paymentDate: new Date(paymentDate),
       },
-      session
+      session,
     );
 
     return updatedLoan;
@@ -301,7 +315,7 @@ router.post('/:id/payments', asyncHandler(async (req, res) => {
 
   res.json({
     data: loan,
-    message: 'Payment recorded successfully'
+    message: 'Payment recorded successfully',
   });
 }));
 
@@ -316,7 +330,7 @@ router.post('/:id/status', asyncHandler(async (req, res) => {
     req.params.id,
     status,
     reason,
-    req.user?.id || 'SYSTEM'
+    req.user?.id || 'SYSTEM',
   );
 
   // Send notifications based on status change
@@ -324,24 +338,24 @@ router.post('/:id/status', asyncHandler(async (req, res) => {
     const user = { _id: loan.borrowerId.toString() };
     
     switch (status) {
-      case 'ACTIVE':
-        await getNotificationService().notifyLoanDisbursed(loan, user as any);
-        break;
-      case 'CLOSED':
-        await getNotificationService().notifyLoanFullyPaid(loan, user as any);
-        break;
-      case 'DELINQUENT':
-        const daysOverdue = loan.lastPaymentDate 
-          ? Math.floor((new Date().getTime() - loan.lastPaymentDate.getTime()) / (1000 * 60 * 60 * 24))
-          : 0;
-        await getNotificationService().notifyPaymentOverdue(loan, user as any, daysOverdue);
-        break;
+    case 'ACTIVE':
+      await getNotificationService().notifyLoanDisbursed(loan, user as any);
+      break;
+    case 'CLOSED':
+      await getNotificationService().notifyLoanFullyPaid(loan, user as any);
+      break;
+    case 'DELINQUENT':
+      const daysOverdue = loan.lastPaymentDate
+        ? Math.floor((new Date().getTime() - loan.lastPaymentDate.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+      await getNotificationService().notifyPaymentOverdue(loan, user as any, daysOverdue);
+      break;
     }
   }
 
   res.json({
     data: loan,
-    message: 'Loan status updated successfully'
+    message: 'Loan status updated successfully',
   });
 }));
 
@@ -363,7 +377,7 @@ router.post('/:id/modifications', asyncHandler(async (req, res) => {
 
   res.json({
     data: loan,
-    message: 'Loan modification added successfully'
+    message: 'Loan modification added successfully',
   });
 }));
 

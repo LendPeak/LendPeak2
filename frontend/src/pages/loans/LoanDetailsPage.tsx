@@ -699,7 +699,7 @@ export const LoanDetailsPage = () => {
                   <div className="text-center p-4 bg-gray-50 rounded-lg">
                     <dt className="text-sm font-medium text-gray-600 mb-2">Total Interest</dt>
                     <dd className="text-xl font-bold text-orange-600">
-                      {formatCurrency(toBig(0))} {/* TODO: Calculate total interest */}
+                      {formatCurrency(paymentResult.totalInterest)} {/* Updated to use paymentResult.totalInterest */}
                     </dd>
                   </div>
                   <div className="text-center p-4 bg-gray-50 rounded-lg">

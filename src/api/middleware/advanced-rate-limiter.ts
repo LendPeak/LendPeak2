@@ -81,7 +81,7 @@ export const createAdvancedRateLimiter = (options: AdvancedRateLimiterOptions) =
       const rateLimitResult = await rateLimitingService.checkRateLimit(
         identifier,
         'api',
-        rateLimitOptions
+        rateLimitOptions,
       );
 
       // Check quota if enabled
@@ -165,7 +165,7 @@ export const createAdvancedRateLimiter = (options: AdvancedRateLimiterOptions) =
               req.path,
               req.method,
               res.statusCode,
-              responseTime
+              responseTime,
             );
 
             // Get analytics and check for abuse patterns

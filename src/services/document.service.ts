@@ -109,7 +109,7 @@ export class DocumentService {
         options.entityId,
         options.category,
         documentId,
-        fileExtension
+        fileExtension,
       );
 
       // Calculate checksum
@@ -145,7 +145,7 @@ export class DocumentService {
         thumbnailKey = await this.generateThumbnail(
           options.fileBuffer,
           s3Key,
-          options.mimeType
+          options.mimeType,
         );
       }
 
@@ -207,7 +207,7 @@ export class DocumentService {
   async getSignedUrl(
     s3Key: string,
     operation: 'getObject' | 'putObject' = 'getObject',
-    options: SignedUrlOptions = {}
+    options: SignedUrlOptions = {},
   ): Promise<string> {
     try {
       const params: any = {
@@ -269,7 +269,7 @@ export class DocumentService {
   async copyDocument(
     sourceKey: string,
     destinationKey: string,
-    metadata?: Partial<DocumentMetadata>
+    metadata?: Partial<DocumentMetadata>,
   ): Promise<string> {
     try {
       const copyParams: AWS.S3.CopyObjectRequest = {
@@ -295,7 +295,7 @@ export class DocumentService {
   /**
    * List documents by prefix
    */
-  async listDocuments(prefix: string, maxKeys: number = 1000): Promise<AWS.S3.Object[]> {
+  async listDocuments(prefix: string, maxKeys = 1000): Promise<AWS.S3.Object[]> {
     try {
       const params: AWS.S3.ListObjectsV2Request = {
         Bucket: this.bucketName,
@@ -333,8 +333,8 @@ export class DocumentService {
   async generatePresignedPost(
     key: string,
     contentType: string,
-    maxSize: number = 10485760, // 10MB default
-    expiresIn: number = 3600 // 1 hour
+    maxSize = 10485760, // 10MB default
+    expiresIn = 3600, // 1 hour
   ): Promise<AWS.S3.PresignedPost> {
     try {
       const params = {
@@ -353,8 +353,11 @@ export class DocumentService {
 
       return await new Promise((resolve, reject) => {
         this.s3.createPresignedPost(params, (err, data) => {
-          if (err) reject(err);
-          else resolve(data);
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
         });
       });
     } catch (error) {
@@ -368,7 +371,9 @@ export class DocumentService {
    */
   async batchDeleteDocuments(s3Keys: string[]): Promise<void> {
     try {
-      if (s3Keys.length === 0) return;
+      if (s3Keys.length === 0) {
+        return;
+      }
 
       const deleteParams: AWS.S3.DeleteObjectsRequest = {
         Bucket: this.bucketName,
@@ -399,7 +404,7 @@ export class DocumentService {
     entityId: string,
     category: string,
     documentId: string,
-    extension: string
+    extension: string,
   ): string {
     const date = new Date();
     const year = date.getFullYear();
@@ -424,7 +429,7 @@ export class DocumentService {
   private async generateThumbnail(
     imageBuffer: Buffer,
     originalKey: string,
-    mimeType: string
+    mimeType: string,
   ): Promise<string> {
     // In a production environment, you would use AWS Lambda with Sharp or ImageMagick
     // For now, we'll just create a placeholder
@@ -445,19 +450,31 @@ export class DocumentService {
   private metadataToS3Metadata(metadata: Partial<DocumentMetadata>): Record<string, string> {
     const s3Metadata: Record<string, string> = {};
 
-    if (metadata.id) s3Metadata.documentId = metadata.id;
-    if (metadata.uploadedBy) s3Metadata.uploadedBy = metadata.uploadedBy;
-    if (metadata.category) s3Metadata.category = metadata.category;
-    if (metadata.entityType) s3Metadata.entityType = metadata.entityType;
-    if (metadata.entityId) s3Metadata.entityId = metadata.entityId;
-    if (metadata.checksum) s3Metadata.checksum = metadata.checksum;
+    if (metadata.id) {
+      s3Metadata.documentId = metadata.id;
+    }
+    if (metadata.uploadedBy) {
+      s3Metadata.uploadedBy = metadata.uploadedBy;
+    }
+    if (metadata.category) {
+      s3Metadata.category = metadata.category;
+    }
+    if (metadata.entityType) {
+      s3Metadata.entityType = metadata.entityType;
+    }
+    if (metadata.entityId) {
+      s3Metadata.entityId = metadata.entityId;
+    }
+    if (metadata.checksum) {
+      s3Metadata.checksum = metadata.checksum;
+    }
 
     return s3Metadata;
   }
 
   private getCloudFrontSignedUrl(
     s3Key: string,
-    options: SignedUrlOptions
+    options: SignedUrlOptions,
   ): string {
     // Implement CloudFront signed URL generation
     // This requires CloudFront key pair setup
@@ -474,19 +491,19 @@ export class DocumentService {
    */
   static getRequiredDocuments(entityType: 'loan' | 'user'): DocumentCategory[] {
     switch (entityType) {
-      case 'user':
-        return [
-          DocumentCategory.IDENTITY,
-          DocumentCategory.INCOME,
-          DocumentCategory.BANK_STATEMENT,
-        ];
-      case 'loan':
-        return [
-          DocumentCategory.CONTRACT,
-          DocumentCategory.AGREEMENT,
-        ];
-      default:
-        return [];
+    case 'user':
+      return [
+        DocumentCategory.IDENTITY,
+        DocumentCategory.INCOME,
+        DocumentCategory.BANK_STATEMENT,
+      ];
+    case 'loan':
+      return [
+        DocumentCategory.CONTRACT,
+        DocumentCategory.AGREEMENT,
+      ];
+    default:
+      return [];
     }
   }
 
