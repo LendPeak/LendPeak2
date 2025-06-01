@@ -222,6 +222,7 @@ export function generateAmortizationSchedule(
     totalPayments,
     effectiveInterestRate,
     lastPaymentDate: payments[payments.length - 1]?.dueDate || currentDate,
+    loanTerms: terms, // Add this line
   };
 }
 
@@ -379,7 +380,8 @@ export function recalculateWithPrepayment(
     totalInterest,
     totalPrincipal: originalSchedule.totalPrincipal,
     totalPayments,
-    effectiveInterestRate: originalSchedule.effectiveInterestRate,
+    effectiveInterestRate: originalSchedule.effectiveInterestRate, // TODO: This might need recalculation
     lastPaymentDate: newPayments[newPayments.length - 1]?.dueDate || originalSchedule.lastPaymentDate,
+    loanTerms: originalSchedule.loanTerms, // Add this line
   };
 }
